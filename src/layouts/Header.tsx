@@ -7,6 +7,7 @@ import ProfileDropdown from "@/components/Modal/ProfileDropdown";
 
 export default function Header() {
   const { user } = useUser();
+  console.log("유저 정보 접근", user);
 
   return (
     <header className="w-full h-22 fixed flex justify-center bg-bg-white mx-auto z-50">
