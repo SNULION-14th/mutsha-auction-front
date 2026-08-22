@@ -16,8 +16,6 @@ export default function Auth() {
       try {
         const loginSuccess = await kakaoSignIn(code);
         if (loginSuccess) {
-          localStorage.setItem("isLoggedIn", "true");
-
           // 카카오 로그인 성공 후 사용자 프로필 정보 가져오기
           try {
             const userProfile = await getUserInfo();
