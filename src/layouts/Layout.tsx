@@ -1,6 +1,6 @@
 import Header from "./Header";
 import Footer from "./Footer";
-import { Outlet } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 import { MODALS, useModal } from "../hooks/useModal";
 import LoginModal from "../components/Modal/LoginModal";
 import ProfileSettingModal from "../components/Modal/ProfileSettingModal";
@@ -20,12 +20,42 @@ import PointChargeModal from "@/components/Modal/PointChargeModal";
 import { updateUserProfile, getUserInfo } from "@/apis/api";
 
 export default function Layout() {
+  const navigate = useNavigate();
   const { openModal, open, close, isOpen } = useModal();
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [profileImage, setProfileImage] = useState<string>(Profile1);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
   const [nickname, setNickname] = useState("닉네임");
   const [points, setPoints] = useState(0);
+
+  useEffect(() => {
+    const syncPointsFromStoredProfile = () => {
+      const userProfile = localStorage.getItem("userProfile");
+      if (!userProfile) {
+        return;
+      }
+
+      try {
+        const profile = JSON.parse(userProfile) as {
+          remaining_points?: number;
+        };
+        setPoints(profile.remaining_points ?? 0);
+      } catch {
+        // 손상된 로컬 프로필 정보는 기존 화면 상태를 유지합니다.
+      }
+    };
+
+    window.addEventListener(
+      "user-profile-updated",
+      syncPointsFromStoredProfile,
+    );
+    return () => {
+      window.removeEventListener(
+        "user-profile-updated",
+        syncPointsFromStoredProfile,
+      );
+    };
+  }, []);
 
   useEffect(() => {
     const loginStatus = localStorage.getItem("isLoggedIn");
@@ -55,6 +85,8 @@ export default function Layout() {
           setProfileImage(
             profileImages[(profile.profilepic_id - 1) as number] ?? Profile1,
           );
+        } else {
+          setProfileImage(null);
         }
 
         if (!profile.nickname || profile.nickname.trim() === "") {
@@ -86,6 +118,8 @@ export default function Layout() {
                   profileImages[(latestUserInfo.profilepic_id - 1) as number] ??
                     Profile1,
                 );
+              } else {
+                setProfileImage(null);
               }
             }
           } catch (error) {
@@ -167,7 +201,9 @@ export default function Layout() {
                 Profile5,
                 Profile6,
               ];
-              const profilepicId = profileImages.indexOf(profileImage) + 1;
+              const profilepicId = profileImage
+                ? profileImages.indexOf(profileImage) + 1
+                : null;
 
               // 백엔드에 프로필 업데이트 요청
               const updatedProfile = await updateUserProfile(
@@ -205,7 +241,7 @@ export default function Layout() {
       )}
       {openModal === MODALS.PROFILE_IMAGE && (
         <ProfileImageModal
-          current={profileImage}
+          current={profileImage ?? undefined}
           onSave={(img) => {
             setProfileImage(img);
             open(MODALS.PROFILE_SETTING);
@@ -221,6 +257,10 @@ export default function Layout() {
           imageSrc={profileImage}
           points={points}
           onOpenCharge={openCharge}
+          onOpenPaymentHistory={() => {
+            close();
+            navigate("/payment/history");
+          }}
           onLogout={() => {
             setIsLoggedIn(false);
             localStorage.removeItem("isLoggedIn");
