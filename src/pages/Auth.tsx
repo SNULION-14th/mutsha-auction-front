@@ -1,20 +1,56 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { getUserInfo, kakaoSignIn } from "@/apis/api";
 
 export default function Auth() {
   const navigate = useNavigate();
+  const hasRequestedRef = useRef(false);
 
   useEffect(() => {
-    // 초기 버전: 아무것도 하지 않음 (인가 요청/코드 파싱 없음)
-    // TODO: Step1에서 카카오 인가요청 후 리다이렉트되면 여기에서 code를 확인합니다.
-  }, []);
+    if (hasRequestedRef.current) {
+      return;
+    }
+    hasRequestedRef.current = true;
+
+    const requestKakaoSignIn = async () => {
+      const code = new URLSearchParams(window.location.search).get("code");
+
+      if (!code) {
+        console.error("카카오 인가 코드가 없습니다.");
+        return;
+      }
+
+      try {
+        const loginSuccess = await kakaoSignIn(code);
+        if (!loginSuccess) {
+          console.error("카카오 로그인 실패");
+          navigate("/");
+          return;
+        }
+
+        localStorage.setItem("isLoggedIn", "true");
+
+        const userProfile = await getUserInfo();
+        if (userProfile) {
+          localStorage.setItem("userProfile", JSON.stringify(userProfile));
+        } else {
+          console.error("사용자 프로필을 가져오지 못했습니다.");
+        }
+
+        window.location.href = "/";
+      } catch (error) {
+        console.error("카카오 로그인 실패:", error);
+        navigate("/");
+      }
+    };
+
+    requestKakaoSignIn();
+  }, [navigate]);
 
   return (
     <div className="flex flex-col items-center justify-center h-screen">
       <h1 className="text-2xl font-bold">카카오 인가코드 확인</h1>
-      <p className="mt-4 text-gray-600">
-        콘솔에서 인가코드를 확인하세요. (Step2에서 토큰 요청을 구현합니다.)
-      </p>
+      <p className="mt-4 text-gray-600">카카오 로그인 처리 중입니다.</p>
     </div>
   );
 }

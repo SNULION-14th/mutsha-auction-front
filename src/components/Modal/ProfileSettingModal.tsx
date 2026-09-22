@@ -4,7 +4,7 @@ import { Edit } from "../../assets/image";
 import { useState } from "react";
 
 type Props = {
-  imageSrc: string;
+  imageSrc: string | null;
   onEditImage: () => void;
   onSubmitSuccess: (nickname: string) => void;
   onClose: () => void;
@@ -32,10 +32,14 @@ export default function ProfileSettingModal({
         <div className="text-4xl font-bold text-scale-600">프로필 설정</div>
         <div className="flex flex-col gap-12.5">
           <div className="mx-auto relative w-28 h-28">
-            <img
-              src={imageSrc}
-              className="w-28 h-28 rounded-full object-cover"
-            />
+            {imageSrc ? (
+              <img
+                src={imageSrc}
+                className="w-28 h-28 rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-28 h-28 rounded-full bg-scale-200" />
+            )}
             <button
               onClick={onEditImage}
               className="absolute -bottom-1 -right-1 w-9 h-9 rounded-full bg-white shadow flex items-center justify-center"

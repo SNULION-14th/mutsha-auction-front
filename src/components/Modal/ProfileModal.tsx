@@ -10,6 +10,7 @@ type Props = {
   imageSrc?: string;
   points?: number;
   onOpenCharge?: () => void;
+  onOpenPaymentHistory?: () => void;
   onLogout?: () => void;
 };
 
@@ -20,6 +21,7 @@ export default function ProfileModal({
   imageSrc,
   points = 0,
   onOpenCharge,
+  onOpenPaymentHistory,
   onLogout,
 }: Props) {
   return (
@@ -32,11 +34,15 @@ export default function ProfileModal({
     >
       <div className="p-6 flex flex-col gap-5 w-55 border border-brand-secondary rounded-xl">
         <div className="flex items-center gap-2">
-          <img
-            src={imageSrc ?? "https://via.placeholder.com/80"}
-            alt="profile"
-            className="h-8 w-8 rounded-full object-cover"
-          />
+          {imageSrc ? (
+            <img
+              src={imageSrc}
+              alt="profile"
+              className="h-8 w-8 rounded-full object-cover"
+            />
+          ) : (
+            <div className="h-8 w-8 rounded-full bg-scale-200" />
+          )}
           <div className="text-lg font-bold text-scale-600">{nickname}</div>
         </div>
         <div className="flex w-full justify-between items-center">
@@ -59,6 +65,12 @@ export default function ProfileModal({
         >
           충전하기
         </Button>
+        <button
+          onClick={onOpenPaymentHistory}
+          className="flex items-center text-base text-scale-500 underline underline-offset-1"
+        >
+          결제 내역
+        </button>
         <button
           onClick={onLogout}
           className="flex items-center text-base text-scale-400 underline underline-offset-1"
