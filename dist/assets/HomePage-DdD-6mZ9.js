@@ -5,7 +5,7 @@ import {
   B as c,
   C as x,
   g as m,
-} from "./index-khZwk56s.js";
+} from "./index-DfqL7krD.js";
 const f = "/assets/logo_white-3G0HPRIN.svg",
   u = "/assets/phone-BxcePYKp.svg",
   h = "/assets/heart-D_FxMiay.svg",

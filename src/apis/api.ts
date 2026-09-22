@@ -253,12 +253,12 @@ export type PaymentReadyResponse = {
 
 export async function paymentReady(
   data: PaymentReadyRequest,
-): Promise<PaymentReadyResponse | null> {
+): Promise<PaymentReadyResponse> {
   try {
     const response = await api.post<PaymentReadyResponse>("/payment/ready/", {
       partner_order_id: `order_${Date.now()}`,
       partner_user_id: "user",
-      item_name: data.point,
+      item_name: `소주잔 ${data.point}잔 충전`,
       quantity: 1,
       total_amount: parseInt(data.price),
       vat_amount: 0,
@@ -271,7 +271,7 @@ export async function paymentReady(
     if (response.status === 200) {
       return response.data;
     }
-    return null;
+    throw new Error("결제 준비 요청이 정상적으로 처리되지 않았습니다.");
   } catch (e: unknown) {
     if (isAxiosError(e)) {
       console.error(
@@ -279,10 +279,17 @@ export async function paymentReady(
         e.response?.status,
         e.response?.data,
       );
+      const detail =
+        typeof e.response?.data === "object" &&
+        e.response?.data !== null &&
+        "detail" in e.response.data
+          ? String(e.response.data.detail)
+          : "카카오페이 결제 준비에 실패했습니다.";
+      throw new Error(detail);
     } else {
       console.error("paymentReady unknown error:", e);
+      throw e;
     }
-    return null;
   }
 }
 

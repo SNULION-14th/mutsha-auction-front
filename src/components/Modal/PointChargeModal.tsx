@@ -35,16 +35,16 @@ function PointCharge({ cup, money /*, onSelect*/ }: ComponentProps) {
         point: cup.toString(),
         price: money.toString(),
       });
-      if (response) {
-        localStorage.setItem("tid", response.tid);
-        window.location.href = response.next_redirect_pc_url;
-      }
+      localStorage.setItem("tid", response.tid);
+      window.location.href = response.next_redirect_pc_url;
     } catch (error: any) {
       console.error("결제 준비 실패:", error);
       if (error.response?.status === 401) {
         alert("로그인이 필요합니다. 먼저 로그인해주세요.");
       } else {
-        alert("결제 준비에 실패했습니다. 다시 시도해주세요.");
+        alert(
+          `결제 준비에 실패했습니다. ${error.message ?? "다시 시도해주세요."}`,
+        );
       }
     }
   };

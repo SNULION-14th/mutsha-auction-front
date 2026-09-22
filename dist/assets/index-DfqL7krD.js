@@ -20604,7 +20604,7 @@ async function lS(n) {
     const r = await ga.post("/payment/ready/", {
       partner_order_id: `order_${Date.now()}`,
       partner_user_id: "user",
-      item_name: n.point,
+      item_name: `소주잔 ${n.point}잔 충전`,
       quantity: 1,
       total_amount: parseInt(n.price),
       vat_amount: 0,
@@ -20613,18 +20613,23 @@ async function lS(n) {
       cancel_url: `${window.location.origin}/payment/cancel`,
       fail_url: `${window.location.origin}/payment/fail`,
     });
-    return r.status === 200 ? r.data : null;
+    if (r.status === 200) return r.data;
+    throw new Error("결제 준비 요청이 정상적으로 처리되지 않았습니다.");
   } catch (r) {
-    return (
-      on(r)
-        ? console.error(
-            "paymentReady error:",
-            r.response?.status,
-            r.response?.data,
-          )
-        : console.error("paymentReady unknown error:", r),
-      null
-    );
+    if (on(r)) {
+      console.error(
+        "paymentReady error:",
+        r.response?.status,
+        r.response?.data,
+      );
+      const u =
+        typeof r.response?.data == "object" &&
+        r.response?.data !== null &&
+        "detail" in r.response.data
+          ? String(r.response.data.detail)
+          : "카카오페이 결제 준비에 실패했습니다.";
+      throw new Error(u);
+    } else throw (console.error("paymentReady unknown error:", r), r);
   }
 }
 async function KS(n) {
@@ -20662,14 +20667,15 @@ function ku({ cup: n, money: r }) {
     }
     try {
       const c = await lS({ point: n.toString(), price: r.toString() });
-      c &&
-        (localStorage.setItem("tid", c.tid),
+      (localStorage.setItem("tid", c.tid),
         (window.location.href = c.next_redirect_pc_url));
     } catch (c) {
       (console.error("결제 준비 실패:", c),
         c.response?.status === 401
           ? alert("로그인이 필요합니다. 먼저 로그인해주세요.")
-          : alert("결제 준비에 실패했습니다. 다시 시도해주세요."));
+          : alert(
+              `결제 준비에 실패했습니다. ${c.message ?? "다시 시도해주세요."}`,
+            ));
     }
   };
   return J.jsxs("div", {
@@ -20850,15 +20856,15 @@ function rS() {
     ],
   });
 }
-const iS = C.lazy(() => Ia(() => import("./HomePage-BgnEHTof.js"), [])),
-  uS = C.lazy(() => Ia(() => import("./AuctionSearchPage-Cjq6EL66.js"), [])),
-  oS = C.lazy(() => Ia(() => import("./AuctionRoomPage-GsiImXfX.js"), [])),
-  sS = C.lazy(() => Ia(() => import("./AuctionCreatePage-DbzkKvPn.js"), [])),
-  cS = C.lazy(() => Ia(() => import("./HistoryPage-Dxy_n4dw.js"), [])),
-  fS = C.lazy(() => Ia(() => import("./Auth-Dkfk2VLA.js"), [])),
-  dS = C.lazy(() => Ia(() => import("./PaymentApprovalPage-Bfair0gM.js"), [])),
-  hS = C.lazy(() => Ia(() => import("./PaymentCancelPage-CD7A8zMN.js"), [])),
-  mS = C.lazy(() => Ia(() => import("./PaymentFailPage-Bfr6TJZr.js"), [])),
+const iS = C.lazy(() => Ia(() => import("./HomePage-DdD-6mZ9.js"), [])),
+  uS = C.lazy(() => Ia(() => import("./AuctionSearchPage-DaR-1tEf.js"), [])),
+  oS = C.lazy(() => Ia(() => import("./AuctionRoomPage-Cn6xaMO4.js"), [])),
+  sS = C.lazy(() => Ia(() => import("./AuctionCreatePage-Bcam9peZ.js"), [])),
+  cS = C.lazy(() => Ia(() => import("./HistoryPage-BbMQJQfU.js"), [])),
+  fS = C.lazy(() => Ia(() => import("./Auth-wuy8PE54.js"), [])),
+  dS = C.lazy(() => Ia(() => import("./PaymentApprovalPage-C2fUeZyC.js"), [])),
+  hS = C.lazy(() => Ia(() => import("./PaymentCancelPage-4jrBmr1p.js"), [])),
+  mS = C.lazy(() => Ia(() => import("./PaymentFailPage-BIorQmzO.js"), [])),
   pS = [{ path: Wa.HOME.ROOT, element: J.jsx(iS, {}) }],
   yS = [
     { path: Wa.AUCTION.ROOT, element: J.jsx(uS, {}) },
