@@ -15,6 +15,72 @@ export type UserProfile = {
   is_social_login: boolean;
 };
 
+export async function kakaoSignIn(code: string): Promise<boolean> {
+  try {
+    const res = await api.get("/user/kakao/callback/", {
+      params: { code },
+    });
+    if (res.status === 200) return true;
+    return false;
+  } catch (e: unknown) {
+    if (isAxiosError(e)) {
+      console.error("kakaoSignIn error:", e.response?.status, e.response?.data);
+    } else {
+      console.error("kakaoSignIn unknown error:", e);
+    }
+  }
+  return false;
+}
+
+export type Payment = {
+  id: number;
+  partner_order_id: string;
+  item_name: string;
+  quantity: number;
+  total_amount: number;
+  status: "READY" | "APPROVED" | "FAILED";
+  approved_at: string | null;
+  created_at: string;
+  kakao_status?: string | null;
+};
+
+export type PaymentHistoryItem = {
+  id: number;
+  item_name: string;
+  amount: number;
+  payment_method_type: string;
+  approved_at: string;
+};
+
+export async function preparePayment(quantity: number, totalAmount: number) {
+  const response = await api.post("/payment/ready/", {
+    item_name: `소주잔 ${quantity}잔 충전`,
+    quantity,
+    total_amount: totalAmount,
+  });
+  return response.data as {
+    partner_order_id: string;
+    tid: string;
+    next_redirect_pc_url: string;
+  };
+}
+
+export async function approvePayment(partnerOrderId: string, pgToken: string) {
+  const response = await api.post("/payment/approve/", {
+    partner_order_id: partnerOrderId,
+    pg_token: pgToken,
+  });
+  return response.data as {
+    payment: Payment;
+    user_profile: { remaining_points: number };
+  };
+}
+
+export async function getPaymentHistory(): Promise<PaymentHistoryItem[]> {
+  const response = await api.get<PaymentHistoryItem[]>("/payment/orders/");
+  return response.data;
+}
+
 export type AuctionListParams = {
   status?: "active" | "ended" | "cancelled";
   search?: string;
@@ -164,5 +230,97 @@ export async function updateUserProfile(
       console.error("updateUserProfile unknown error:", e);
     }
     return null;
+  }
+}
+
+// 🔻 아래 타입 두 개와 함수를 api.ts 맨 아래에 추가
+// 카카오페이 준비 api
+export type PaymentReadyRequest = {
+  point: string;
+  price: string;
+};
+
+export type PaymentReadyResponse = {
+  partner_order_id: string;
+  tid: string;
+  next_redirect_pc_url: string;
+  next_redirect_mobile_url: string;
+  next_redirect_app_url: string;
+  android_app_scheme: string;
+  ios_app_scheme: string;
+  created_at: string;
+};
+
+export async function paymentReady(
+  data: PaymentReadyRequest,
+): Promise<PaymentReadyResponse> {
+  try {
+    const response = await api.post<PaymentReadyResponse>("/payment/ready/", {
+      partner_order_id: `order_${Date.now()}`,
+      partner_user_id: "user",
+      item_name: `소주잔 ${data.point}잔 충전`,
+      quantity: 1,
+      total_amount: parseInt(data.price),
+      vat_amount: 0,
+      tax_free_amount: 0,
+      approval_url: `${window.location.origin}/payment/approve`,
+      cancel_url: `${window.location.origin}/payment/cancel`,
+      fail_url: `${window.location.origin}/payment/fail`,
+    });
+
+    if (response.status === 200) {
+      return response.data;
+    }
+    throw new Error("결제 준비 요청이 정상적으로 처리되지 않았습니다.");
+  } catch (e: unknown) {
+    if (isAxiosError(e)) {
+      console.error(
+        "paymentReady error:",
+        e.response?.status,
+        e.response?.data,
+      );
+      const detail =
+        typeof e.response?.data === "object" &&
+        e.response?.data !== null &&
+        "detail" in e.response.data
+          ? String(e.response.data.detail)
+          : "카카오페이 결제 준비에 실패했습니다.";
+      throw new Error(detail);
+    } else {
+      console.error("paymentReady unknown error:", e);
+      throw e;
+    }
+  }
+}
+
+// 카카오페이 결제 승인 api
+export type PaymentApprovalRequest = {
+  pg_token: string;
+  tid: string;
+};
+
+export async function paymentApproval(
+  data: PaymentApprovalRequest,
+): Promise<boolean> {
+  try {
+    const response = await api.post("/payment/approve/", {
+      pg_token: data.pg_token,
+      tid: data.tid,
+    });
+    if (response.status === 200) {
+      return true;
+    }
+    return false;
+  } catch (e: unknown) {
+    if (isAxiosError(e)) {
+      console.error(
+        "paymentApproval error:",
+        e.response?.status,
+        e.response?.data,
+      );
+    } else {
+      console.error("paymentApproval unknown error:", e);
+    }
+    return false;
   }
 }

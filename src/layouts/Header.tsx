@@ -52,7 +52,7 @@ export default function Header({
             <div className="text-xl text-scale-500">경매 등록</div>
           </Link>
           <Link to="/history" className="cursor-pointer">
-            <div className="text-xl text-scale-500">내 경매</div>
+            <div className="text-xl text-scale-500">결제 내역</div>
           </Link>
           {isLoggedIn ? (
             <div
