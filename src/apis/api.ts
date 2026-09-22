@@ -267,3 +267,29 @@ export async function paymentApproval(
     return false;
   }
 }
+
+export type PaymentHistoryItem = {
+  tid: string;
+  item_name: string;
+  amount: number | null;
+  payment_method_type: string;
+  approved_at: string | null;
+};
+
+export async function getPaymentHistory(): Promise<PaymentHistoryItem[]> {
+  try {
+    const response = await api.get<PaymentHistoryItem[]>("/payment/history/");
+    return response.status === 200 ? response.data : [];
+  } catch (e: unknown) {
+    if (isAxiosError(e)) {
+      console.error(
+        "getPaymentHistory error:",
+        e.response?.status,
+        e.response?.data,
+      );
+    } else {
+      console.error("getPaymentHistory unknown error:", e);
+    }
+    return [];
+  }
+}
