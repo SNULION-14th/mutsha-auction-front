@@ -13,10 +13,9 @@
     "isolatedModules": true,
     "noEmit": true,
     "types": ["vite/client", "react/experimental", "react-dom/experimental"],
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-      "@page/*": ["src/pages/*"]
+      "@/*": ["./src/*"],
+      "@page/*": ["./src/pages/*"]
     }
   },
   "include": ["src", "eslint.config.js"]
