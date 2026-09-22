@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { getPaymentHistory, Payment } from "@/apis/api";
+import { getPaymentHistory, PaymentHistoryItem } from "@/apis/api";
 import { numberCommaFormatter } from "@/utils/number";
 
 function HistoryPage() {
-  const [payments, setPayments] = useState<Payment[]>([]);
+  const [payments, setPayments] = useState<PaymentHistoryItem[]>([]);
   const [message, setMessage] = useState("결제 내역을 불러오는 중입니다.");
 
   useEffect(() => {
@@ -30,19 +30,15 @@ function HistoryPage() {
                 {payment.item_name}
               </p>
               <p className="mt-2 text-scale-400">
-                {new Date(payment.created_at).toLocaleString("ko-KR")}
+                결제 수단: {payment.payment_method_type}
               </p>
             </div>
             <div className="text-right">
               <p className="font-bold text-scale-600">
-                ₩ {numberCommaFormatter(payment.total_amount)}
+                ₩ {numberCommaFormatter(payment.amount)}
               </p>
               <p className="mt-2 text-sm text-scale-400">
-                {payment.status === "APPROVED"
-                  ? "결제 완료"
-                  : payment.status === "FAILED"
-                    ? "결제 실패"
-                    : "결제 대기"}
+                {new Date(payment.approved_at).toLocaleString("ko-KR")}
               </p>
             </div>
           </article>

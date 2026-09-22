@@ -3,49 +3,47 @@ import {
   e as u,
   r as c,
   j as e,
-  B as x,
-  p,
-  d as h,
-} from "./index-CsaUqdNM.js";
+  B as d,
+  p as h,
+  d as p,
+} from "./index-khZwk56s.js";
 function N() {
   const s = f(),
-    [l] = u(),
-    [m, r] = c.useState(!0),
-    [i, n] = c.useState(null),
+    [n] = u(),
+    [m, t] = c.useState(!0),
+    [i, l] = c.useState(null),
     o = c.useRef(!1);
   return (
     c.useEffect(() => {
       if (o.current) return;
       (async () => {
         try {
-          const t = l.get("pg_token"),
-            d = localStorage.getItem("partner_order_id");
-          if (!t || !d) {
-            (n("결제 정보가 올바르지 않습니다."), r(!1));
+          const r = n.get("pg_token"),
+            x = localStorage.getItem("tid");
+          if (!r || !x) {
+            (l("결제 정보가 올바르지 않습니다."), t(!1));
             return;
           }
-          if (
-            ((o.current = !0), await p({ pg_token: t, partner_order_id: d }))
-          ) {
-            localStorage.removeItem("partner_order_id");
+          if (((o.current = !0), await h({ pg_token: r, tid: x }))) {
+            localStorage.removeItem("tid");
             try {
-              const a = await h();
+              const a = await p();
               a && localStorage.setItem("userProfile", JSON.stringify(a));
             } catch (a) {
               console.error("사용자 정보 가져오기 실패:", a);
             }
-            (r(!1),
+            (t(!1),
               setTimeout(() => {
                 s("/");
               }, 3e3));
-          } else (n("결제 승인에 실패했습니다."), r(!1));
-        } catch (t) {
-          (console.error("결제 승인 실패:", t),
-            n("결제 승인 중 오류가 발생했습니다."),
-            r(!1));
+          } else (l("결제 승인에 실패했습니다."), t(!1));
+        } catch (r) {
+          (console.error("결제 승인 실패:", r),
+            l("결제 승인 중 오류가 발생했습니다."),
+            t(!1));
         }
       })();
-    }, [l, s]),
+    }, [n, s]),
     m
       ? e.jsx("div", {
           className:
@@ -97,7 +95,7 @@ function N() {
                     e.jsx("p", { className: "text-scale-500", children: i }),
                   ],
                 }),
-                e.jsx(x, {
+                e.jsx(d, {
                   variant: "primary",
                   size: "large",
                   onButtonClick: () => s("/"),
@@ -136,7 +134,7 @@ function N() {
                     }),
                   ],
                 }),
-                e.jsx(x, {
+                e.jsx(d, {
                   variant: "primary",
                   size: "large",
                   onButtonClick: () => s("/"),

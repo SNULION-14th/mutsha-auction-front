@@ -36,7 +36,7 @@ function PointCharge({ cup, money /*, onSelect*/ }: ComponentProps) {
         price: money.toString(),
       });
       if (response) {
-        localStorage.setItem("partner_order_id", response.partner_order_id);
+        localStorage.setItem("tid", response.tid);
         window.location.href = response.next_redirect_pc_url;
       }
     } catch (error: any) {

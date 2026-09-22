@@ -17889,7 +17889,7 @@ function bb({
               className: "cursor-pointer",
               children: J.jsx("div", {
                 className: "text-xl text-scale-500",
-                children: "내 경매",
+                children: "결제 내역",
               }),
             }),
             n
@@ -20630,12 +20630,8 @@ async function lS(n) {
 async function KS(n) {
   try {
     return (
-      (
-        await ga.post("/payment/approve/", {
-          pg_token: n.pg_token,
-          partner_order_id: n.partner_order_id,
-        })
-      ).status === 200
+      (await ga.post("/payment/approve/", { pg_token: n.pg_token, tid: n.tid }))
+        .status === 200
     );
   } catch (r) {
     return (
@@ -20667,7 +20663,7 @@ function ku({ cup: n, money: r }) {
     try {
       const c = await lS({ point: n.toString(), price: r.toString() });
       c &&
-        (localStorage.setItem("partner_order_id", c.partner_order_id),
+        (localStorage.setItem("tid", c.tid),
         (window.location.href = c.next_redirect_pc_url));
     } catch (c) {
       (console.error("결제 준비 실패:", c),
@@ -20854,15 +20850,15 @@ function rS() {
     ],
   });
 }
-const iS = C.lazy(() => Ia(() => import("./HomePage-C2td5jKN.js"), [])),
-  uS = C.lazy(() => Ia(() => import("./AuctionSearchPage-BSMukPuE.js"), [])),
-  oS = C.lazy(() => Ia(() => import("./AuctionRoomPage-C4hNvy9Q.js"), [])),
-  sS = C.lazy(() => Ia(() => import("./AuctionCreatePage-B50uuTE0.js"), [])),
-  cS = C.lazy(() => Ia(() => import("./HistoryPage-NAPOoQpf.js"), [])),
-  fS = C.lazy(() => Ia(() => import("./Auth-BLefFyUt.js"), [])),
-  dS = C.lazy(() => Ia(() => import("./PaymentApprovalPage-C0qe8ydd.js"), [])),
-  hS = C.lazy(() => Ia(() => import("./PaymentCancelPage-CUEAule7.js"), [])),
-  mS = C.lazy(() => Ia(() => import("./PaymentFailPage-DB7q1G6u.js"), [])),
+const iS = C.lazy(() => Ia(() => import("./HomePage-BgnEHTof.js"), [])),
+  uS = C.lazy(() => Ia(() => import("./AuctionSearchPage-Cjq6EL66.js"), [])),
+  oS = C.lazy(() => Ia(() => import("./AuctionRoomPage-GsiImXfX.js"), [])),
+  sS = C.lazy(() => Ia(() => import("./AuctionCreatePage-DbzkKvPn.js"), [])),
+  cS = C.lazy(() => Ia(() => import("./HistoryPage-Dxy_n4dw.js"), [])),
+  fS = C.lazy(() => Ia(() => import("./Auth-Dkfk2VLA.js"), [])),
+  dS = C.lazy(() => Ia(() => import("./PaymentApprovalPage-Bfair0gM.js"), [])),
+  hS = C.lazy(() => Ia(() => import("./PaymentCancelPage-CD7A8zMN.js"), [])),
+  mS = C.lazy(() => Ia(() => import("./PaymentFailPage-Bfr6TJZr.js"), [])),
   pS = [{ path: Wa.HOME.ROOT, element: J.jsx(iS, {}) }],
   yS = [
     { path: Wa.AUCTION.ROOT, element: J.jsx(uS, {}) },

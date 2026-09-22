@@ -19,9 +19,9 @@ export default function PaymentApprovalPage() {
     const processPayment = async () => {
       try {
         const pgToken = searchParams.get("pg_token");
-        const partnerOrderId = localStorage.getItem("partner_order_id");
+        const tid = localStorage.getItem("tid");
 
-        if (!pgToken || !partnerOrderId) {
+        if (!pgToken || !tid) {
           setError("결제 정보가 올바르지 않습니다.");
           setIsProcessing(false);
           return;
@@ -32,11 +32,11 @@ export default function PaymentApprovalPage() {
 
         const approvalSuccess = await paymentApproval({
           pg_token: pgToken,
-          partner_order_id: partnerOrderId,
+          tid: tid,
         });
 
         if (approvalSuccess) {
-          localStorage.removeItem("partner_order_id");
+          localStorage.removeItem("tid");
 
           try {
             const latestUserInfo = await getUserInfo();

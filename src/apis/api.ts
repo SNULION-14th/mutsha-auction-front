@@ -44,6 +44,14 @@ export type Payment = {
   kakao_status?: string | null;
 };
 
+export type PaymentHistoryItem = {
+  id: number;
+  item_name: string;
+  amount: number;
+  payment_method_type: string;
+  approved_at: string;
+};
+
 export async function preparePayment(quantity: number, totalAmount: number) {
   const response = await api.post("/payment/ready/", {
     item_name: `소주잔 ${quantity}잔 충전`,
@@ -68,8 +76,8 @@ export async function approvePayment(partnerOrderId: string, pgToken: string) {
   };
 }
 
-export async function getPaymentHistory(): Promise<Payment[]> {
-  const response = await api.get<Payment[]>("/payment/orders/");
+export async function getPaymentHistory(): Promise<PaymentHistoryItem[]> {
+  const response = await api.get<PaymentHistoryItem[]>("/payment/orders/");
   return response.data;
 }
 
@@ -281,7 +289,7 @@ export async function paymentReady(
 // 카카오페이 결제 승인 api
 export type PaymentApprovalRequest = {
   pg_token: string;
-  partner_order_id: string;
+  tid: string;
 };
 
 export async function paymentApproval(
@@ -290,7 +298,7 @@ export async function paymentApproval(
   try {
     const response = await api.post("/payment/approve/", {
       pg_token: data.pg_token,
-      partner_order_id: data.partner_order_id,
+      tid: data.tid,
     });
     if (response.status === 200) {
       return true;
