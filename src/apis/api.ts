@@ -166,3 +166,20 @@ export async function updateUserProfile(
     return null;
   }
 }
+
+export async function kakaoSignIn(code: string): Promise<boolean> {
+  try {
+    const res = await api.get("/user/kakao/callback/", {
+      params: { code },
+    });
+    if (res.status == 200) return true;
+    return false;
+  } catch (e: unknown) {
+    if (isAxiosError(e)) {
+      console.error("kakaoSignIn error", e.response?.status, e.response?.data);
+    } else {
+      console.error("kakaoSignIn error", e);
+    }
+  }
+  return false;
+}
