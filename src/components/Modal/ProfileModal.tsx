@@ -1,4 +1,5 @@
 import { RefObject } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "../Button";
 import ModalLayout from "./ModalLayout";
 import { Cup } from "@/assets/image";
@@ -22,6 +23,8 @@ export default function ProfileModal({
   onOpenCharge,
   onLogout,
 }: Props) {
+  const navigate = useNavigate();
+
   return (
     <ModalLayout
       onClose={onClose}
@@ -58,6 +61,17 @@ export default function ProfileModal({
           onButtonClick={onOpenCharge}
         >
           충전하기
+        </Button>
+        <Button
+          variant="outlined"
+          size="small"
+          isRounded={true}
+          onButtonClick={() => {
+            onClose();
+            navigate("/payment/history");
+          }}
+        >
+          결제 내역
         </Button>
         <button
           onClick={onLogout}
