@@ -1,6 +1,6 @@
 import Header from "./Header";
 import Footer from "./Footer";
-import { Outlet } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 import { MODALS, useModal } from "../hooks/useModal";
 import LoginModal from "../components/Modal/LoginModal";
 import ProfileSettingModal from "../components/Modal/ProfileSettingModal";
@@ -18,9 +18,11 @@ import ProfileImageModal from "../components/Modal/ProfileImageModal";
 import ProfileModal from "@/components/Modal/ProfileModal";
 import PointChargeModal from "@/components/Modal/PointChargeModal";
 import { updateUserProfile, getUserInfo } from "@/apis/api";
+import { ROUTES } from "@/constants/router";
 
 export default function Layout() {
   const { openModal, open, close, isOpen } = useModal();
+  const navigate = useNavigate();
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [profileImage, setProfileImage] = useState<string>(Profile1);
@@ -221,6 +223,10 @@ export default function Layout() {
           imageSrc={profileImage}
           points={points}
           onOpenCharge={openCharge}
+          onViewPaymentHistory={() => {
+            close();
+            navigate(ROUTES.PAYMENT.HISTORY);
+          }}
           onLogout={() => {
             setIsLoggedIn(false);
             localStorage.removeItem("isLoggedIn");
