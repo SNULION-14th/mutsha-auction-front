@@ -10,6 +10,7 @@ type Props = {
   imageSrc?: string;
   points?: number;
   onOpenCharge?: () => void;
+  onOpenOrders?: () => void;
   onLogout?: () => void;
 };
 
@@ -20,6 +21,7 @@ export default function ProfileModal({
   imageSrc,
   points = 0,
   onOpenCharge,
+  onOpenOrders,
   onLogout,
 }: Props) {
   return (
@@ -58,6 +60,14 @@ export default function ProfileModal({
           onButtonClick={onOpenCharge}
         >
           충전하기
+        </Button>
+        <Button
+          variant="outlined"
+          size="small"
+          isRounded={true}
+          onButtonClick={onOpenOrders}
+        >
+          주문 조회
         </Button>
         <button
           onClick={onLogout}
