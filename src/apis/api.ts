@@ -1,6 +1,37 @@
 import { isAxiosError } from "axios";
 import { api } from "./axios";
 
+export type PaymentHistoryItem = {
+  tid: string;
+  item_name: string;
+  amount: { total: number };
+  payment_method_type: string;
+  approved_at: string | null;
+};
+export async function preparePayment(
+  itemName: string,
+  quantity: number,
+  totalAmount: number,
+) {
+  return (
+    await api.post<{ tid: string; next_redirect_pc_url: string }>(
+      "/payment/ready/",
+      { item_name: itemName, quantity, total_amount: totalAmount },
+    )
+  ).data;
+}
+export async function approvePayment(tid: string, pgToken: string) {
+  return (
+    await api.post<{ tid: string; status: string; remaining_points: number }>(
+      "/payment/approve/",
+      { tid, pg_token: pgToken },
+    )
+  ).data;
+}
+export async function getPaymentHistory() {
+  return (await api.get<PaymentHistoryItem[]>("/payment/history/")).data;
+}
+
 export type UserCore = {
   id: number;
   username: string;

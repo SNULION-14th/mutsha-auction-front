@@ -2,17 +2,24 @@ import { Button } from "../Button";
 import ModalLayout from "./ModalLayout";
 import { Kakao } from "../../assets/image";
 
-type Props = {
-  onClose: () => void;
-  onLogin?: () => void;
-};
+type Props = { onClose: () => void; onLogin?: () => void };
 
-export default function LoginModal({ onLogin, onClose }: Props) {
+export default function LoginModal({ onClose }: Props) {
   const handleKakaoLogin = () => {
-    // 초기 버전: 아직 구현되지 않은 상태
-    // TODO: 카카오 로그인 연동 예정
-    alert("카카오 로그인은 준비 중입니다.");
-    onLogin?.(); // 있으면 외부 콜백만 호출
+    const clientId = import.meta.env.VITE_KAKAO_CLIENT_ID as string | undefined;
+    const redirectUri = import.meta.env.VITE_KAKAO_REDIRECT_URI as
+      | string
+      | undefined;
+    if (!clientId || !redirectUri) {
+      alert("카카오 로그인 설정을 확인해주세요.");
+      return;
+    }
+    const params = new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      response_type: "code",
+    });
+    window.location.assign(`https://kauth.kakao.com/oauth/authorize?${params}`);
   };
 
   return (
@@ -21,7 +28,7 @@ export default function LoginModal({ onLogin, onClose }: Props) {
         <div className="flex flex-col gap-4">
           <div className="text-4xl font-bold text-scale-600">로그인</div>
           <div className="text-lg text-scale-400">
-            처음이면 자동 회원가입 후 이용할 수 있어요.
+            처음이라면 자동으로 회원가입이 진행됩니다.
           </div>
         </div>
         <Button

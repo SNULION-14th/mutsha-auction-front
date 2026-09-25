@@ -34,13 +34,11 @@ api.interceptors.response.use(
 
       // refresh token으로 새로운 access token 요청
       const refreshToken = getCookie("refresh_token");
-      if (refreshToken) {
+      if (true) {
         try {
           const response = await axios.post(
             `${import.meta.env.VITE_API_BASE_URL}/api/user/refresh/`,
-            {
-              refresh: refreshToken,
-            },
+            refreshToken ? { refresh: refreshToken } : {},
             {
               withCredentials: true,
             },

@@ -16,6 +16,9 @@ const PaymentApprovalPage = lazy(
 );
 const PaymentCancelPage = lazy(() => import("@page/Payment/PaymentCancelPage"));
 const PaymentFailPage = lazy(() => import("@page/Payment/PaymentFailPage"));
+const PaymentHistoryPage = lazy(
+  () => import("@page/Payment/PaymentHistoryPage"),
+);
 
 const homeRoutes = [
   {
@@ -57,6 +60,10 @@ const authRoutes = [
 ];
 
 const paymentRoutes = [
+  {
+    path: "/payment/history",
+    element: <PaymentHistoryPage />,
+  },
   {
     path: ROUTES.PAYMENT.APPROVAL,
     element: <PaymentApprovalPage />,
