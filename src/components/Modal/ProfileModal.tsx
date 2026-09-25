@@ -2,6 +2,7 @@ import { RefObject } from "react";
 import { Button } from "../Button";
 import ModalLayout from "./ModalLayout";
 import { Cup } from "@/assets/image";
+import { Link } from "react-router-dom";
 
 type Props = {
   onClose: () => void;
@@ -59,6 +60,13 @@ export default function ProfileModal({
         >
           충전하기
         </Button>
+        <Link
+          to="/payment/history"
+          onClick={onClose}
+          className="text-base text-scale-500 underline underline-offset-1"
+        >
+          결제 내역
+        </Link>
         <button
           onClick={onLogout}
           className="flex items-center text-base text-scale-400 underline underline-offset-1"
