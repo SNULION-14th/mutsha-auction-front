@@ -29,7 +29,7 @@ export default function Auth() {
           }
 
           // 메인 페이지로 이동
-          window.location.href = "/";
+          navigate("/", { replace: true });
         } else {
           console.error("카카오 로그인 실패");
           navigate("/");
