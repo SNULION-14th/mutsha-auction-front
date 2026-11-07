@@ -6,11 +6,13 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-
+import { useState } from "react";
 import PointChargeModalButton from "./PointChargeModal";
 import ProfileSettingModalButton from "./ProfileSettingModal";
 
 export default function ProfileDropdown() {
+  const [isPointChargeModalOpen, setIsPointChargeModalOpen] = useState(false);
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -36,7 +38,10 @@ export default function ProfileDropdown() {
             잔
           </div>
         </div>
-        <PointChargeModalButton />
+        <PointChargeModalButton
+          open={isPointChargeModalOpen}
+          onOpenChange={setIsPointChargeModalOpen}
+        />
         <button className="flex items-center text-base text-scale-400 underline underline-offset-1 cursor-pointer">
           로그아웃
         </button>

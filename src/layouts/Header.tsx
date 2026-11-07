@@ -2,7 +2,6 @@ import { Link } from "react-router-dom";
 import { Logo } from "../assets/image";
 
 import LoginModal from "@/components/Modal/LoginModal";
-// import ProfileDropdown from "@/components/Modal/ProfileDropdown";
 
 export default function Header() {
   return (

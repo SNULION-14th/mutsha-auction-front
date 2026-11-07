@@ -44,7 +44,7 @@ export default function ProfileSettingModal({
           <div className="flex flex-col gap-12.5">
             <div className="mx-auto relative w-28 h-28">
               <img
-                src={imageSrc}
+                src={selectedProfileImage}
                 className="w-28 h-28 rounded-full object-cover"
               />
 
