@@ -1,8 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { YhFashion } from "@/assets/dummy";
 import { Button } from "@/components/Button";
-import { useState, useEffect } from "react";
-import { type AuctionListItem, getRecommendedAuctions } from "@/apis/api";
+import { useRecommendedAuctions } from "@/hooks/useAuctionQueries";
 
 type CardProps = {
   image: string;
@@ -46,27 +45,8 @@ function RecommendCard({
 
 export function RecommendSection() {
   const navigate = useNavigate();
-  const [recommendedAuctions, setRecommendedAuctions] = useState<
-    AuctionListItem[]
-  >([]);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const auctions = await getRecommendedAuctions();
-        // Ensure we always set an array
-        if (Array.isArray(auctions)) {
-          setRecommendedAuctions(auctions);
-        } else {
-          console.warn("getRecommendedAuctions returned non-array:", auctions);
-          setRecommendedAuctions([]);
-        }
-      } catch (error) {
-        console.error("추천 경매 데이터 로딩 실패:", error);
-        setRecommendedAuctions([]);
-      }
-    })();
-  }, []);
+  const recommendedQuery = useRecommendedAuctions();
+  const recommendedAuctions = recommendedQuery.data ?? [];
 
   const handleCardClick = (auctionId: number) => {
     navigate(`/auction/${auctionId}`);
@@ -95,8 +75,19 @@ export function RecommendSection() {
         </div>
 
         <div className="w-full grid grid-cols-2 gap-10 pb-25 border-b border-b-scale-200">
-          {Array.isArray(recommendedAuctions) &&
-          recommendedAuctions.length > 0 ? (
+          {recommendedQuery.isPending ? (
+            <div className="col-span-2 text-center py-20 text-scale-400">
+              추천 경매를 불러오는 중...
+            </div>
+          ) : recommendedQuery.isError ? (
+            <div
+              role="alert"
+              className="col-span-2 text-center py-20 text-point-warning"
+            >
+              추천 경매를 불러오지 못했습니다.
+            </div>
+          ) : Array.isArray(recommendedAuctions) &&
+            recommendedAuctions.length > 0 ? (
             recommendedAuctions.map((auction) => (
               <RecommendCard
                 key={auction.id}

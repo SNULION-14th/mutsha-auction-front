@@ -1,8 +1,9 @@
-import { AuctionListItem, getAllAuctions } from "@/apis/api";
+import type { AuctionListItem } from "@/apis/api";
 import { useEffect, useMemo, useState } from "react";
 import { AuctionCard } from "./components/AuctionCard";
 import Pagination from "@/components/Pagination";
 import { toAbsoluteUrl } from "@/utils/url";
+import { useAuctionList } from "@/hooks/useAuctionQueries";
 
 const PAGE_SIZE = 6;
 
@@ -12,26 +13,9 @@ function pickImage(a: AuctionListItem) {
 }
 
 function AuctionSearchPage() {
-  const [auctions, setAuctions] = useState<AuctionListItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-
-  useEffect(() => {
-    async function load() {
-      try {
-        setLoading(true);
-        const data = await getAllAuctions({ status: "active" });
-        setAuctions(data);
-      } catch (e) {
-        console.error(e);
-        setError("경매 목록 불러오기 실패");
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, []);
+  const auctionQuery = useAuctionList({ status: "active" });
+  const auctions = auctionQuery.data ?? [];
 
   const total = auctions.length;
   const pageItems = useMemo(() => {
@@ -53,12 +37,14 @@ function AuctionSearchPage() {
             멋사 구성원들의 애착템에 입찰해보세요!
           </div>
         </div>
-        {loading ? (
+        {auctionQuery.isPending ? (
           <div className="text-center text-scale-400 py-20">
             불러오는 중 ...
           </div>
-        ) : error ? (
-          <div className="text-center text-point-warning py-20">{error}</div>
+        ) : auctionQuery.isError ? (
+          <div className="text-center text-point-warning py-20">
+            {auctionQuery.error.message || "경매 목록을 불러오지 못했습니다."}
+          </div>
         ) : total === 0 ? (
           <div className="text-center text-scale-400 py-20">
             아직 진행 중인 경매가 없어요.

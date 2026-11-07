@@ -84,7 +84,7 @@ export async function getAllAuctions(
   try {
     const res = await api.get<AuctionListItem[]>("/auction/", { params });
     if (res.status === 200) return res.data;
-    return [];
+    throw new Error(`경매 목록 요청 실패: ${res.status}`);
   } catch (e: unknown) {
     if (isAxiosError(e)) {
       console.error(
@@ -95,7 +95,7 @@ export async function getAllAuctions(
     } else {
       console.error("getAllAuctions unknown error:", e);
     }
-    return [];
+    throw e;
   }
 }
 
@@ -103,7 +103,7 @@ export async function getRecommendedAuctions(): Promise<AuctionListItem[]> {
   try {
     const res = await api.get<AuctionListItem[]>("/auction/recommended/");
     if (res.status === 200) return res.data;
-    return [];
+    throw new Error(`추천 경매 요청 실패: ${res.status}`);
   } catch (e: unknown) {
     if (isAxiosError(e)) {
       console.error(
@@ -114,7 +114,7 @@ export async function getRecommendedAuctions(): Promise<AuctionListItem[]> {
     } else {
       console.error("getRecommendedAuctions unknown error:", e);
     }
-    return [];
+    throw e;
   }
 }
 
@@ -428,5 +428,20 @@ export async function getMyBids(): Promise<MyBidHistory[]> {
       console.error("getMyBids unknown error:", e);
     }
     return [];
+  }
+}
+
+export async function signOut(): Promise<boolean> {
+  try {
+    const res = await api.post("/user/signout/");
+    if (res.status === 200) return true;
+    return false;
+  } catch (e: unknown) {
+    if (isAxiosError(e)) {
+      console.error("signOut error:", e.response?.status, e.response?.data);
+    } else {
+      console.error("signOut unknown error:", e);
+    }
+    return false;
   }
 }

@@ -16,6 +16,7 @@ import {
   DialogTrigger,
   DialogClose,
 } from "../ui/dialog";
+import { PROFILE_IMAGES } from "@/contexts/UserContext";
 
 const CANDIDATES = [
   Profile1,
@@ -27,11 +28,13 @@ const CANDIDATES = [
 ] as const;
 
 type Props = {
+  imageCandidates: typeof PROFILE_IMAGES;
   selectedProfileImage?: string;
   onSave: (img: string) => void;
 };
 
 export default function ProfileImageModal({
+  imageCandidates,
   selectedProfileImage = CANDIDATES[0],
   onSave,
 }: Props) {
@@ -54,7 +57,7 @@ export default function ProfileImageModal({
             프로필 이미지 고르기
           </div>
           <div className="grid grid-cols-3 px-10 gap-8">
-            {CANDIDATES.map((candidate) => {
+            {imageCandidates.map((candidate) => {
               const isSel = selected === candidate;
               return (
                 <button

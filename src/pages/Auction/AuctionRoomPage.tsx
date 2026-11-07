@@ -1,17 +1,19 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { AuctionDetail, getAuctionDetail } from "@/apis/api";
+import type { AuctionDetail } from "@/apis/api";
 import { Button } from "@/components/Button";
 import { Cup, LogoWhite } from "@/assets/image";
 import { getRemainingTime } from "@/utils/datetime";
 import PointPayModal from "@/components/Modal/PointPayModal";
+import { useQueryClient } from "@tanstack/react-query";
+import { auctionKeys, useAuctionDetail } from "@/hooks/useAuctionQueries";
 
 function AuctionRoomPage() {
   const { auctionId } = useParams<{ auctionId: string }>();
   const navigate = useNavigate();
-  const [auction, setAuction] = useState<AuctionDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const auctionQuery = useAuctionDetail(auctionId);
+  const auction = auctionQuery.data;
 
   const [bidInput, setBidInput] = useState<string>("");
   const [isPayOpen, setIsPayOpen] = useState(false);
@@ -21,30 +23,6 @@ function AuctionRoomPage() {
   }, [bidInput]);
 
   const [remainingTime, setRemainingTime] = useState<string>("");
-
-  useEffect(() => {
-    async function fetchAuctionDetail() {
-      try {
-        setLoading(true);
-        const data = await getAuctionDetail(auctionId ?? "");
-        if (data) {
-          setAuction(data);
-          setRemainingTime(getRemainingTime(data.end_time));
-        } else {
-          setError("경매를 찾을 수 없습니다.");
-        }
-      } catch (err) {
-        console.error("경매 상세 정보 로딩 실패:", err);
-        setError("경매 정보를 불러오는데 실패했습니다.");
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    if (auctionId) {
-      fetchAuctionDetail();
-    }
-  }, [auctionId]);
 
   useEffect(() => {
     if (!auctionId) return;
@@ -67,7 +45,10 @@ function AuctionRoomPage() {
             "실시간 경매 상태 업데이트:",
             updatedAuctionData.current_price,
           );
-          setAuction(updatedAuctionData);
+          queryClient.setQueryData(
+            auctionKeys.detail(auctionId),
+            updatedAuctionData,
+          );
         } else {
           console.warn("수신된 데이터 형식이 다릅니다: ", updatedAuctionData);
         }
@@ -87,11 +68,12 @@ function AuctionRoomPage() {
     return () => {
       ws.close();
     };
-  }, [auctionId]);
+  }, [auctionId, queryClient]);
 
   useEffect(() => {
-    if (!auction) return;
+    if (!auction?.end_time) return;
 
+    setRemainingTime(getRemainingTime(auction.end_time));
     const interval = setInterval(() => {
       setRemainingTime(getRemainingTime(auction.end_time));
     }, 1000);
@@ -99,7 +81,7 @@ function AuctionRoomPage() {
     return () => {
       clearInterval(interval);
     };
-  }, [auction]);
+  }, [auction?.end_time]);
 
   const isValidBid = useMemo(() => {
     if (!auction) return false;
@@ -111,16 +93,18 @@ function AuctionRoomPage() {
   }, [auction, bid]);
 
   const handleBidSuccess = (newAuction: AuctionDetail) => {
-    setAuction(newAuction);
+    if (auctionId) {
+      queryClient.setQueryData(auctionKeys.detail(auctionId), newAuction);
+    }
     setBidInput("");
   };
 
   const isEnded = useMemo(() => {
     if (!auction?.end_time) return false;
-    return getRemainingTime(auction.end_time) === "00d 00h 00m";
-  }, [auction?.end_time]);
+    return remainingTime === "00d 00h 00m";
+  }, [auction?.end_time, remainingTime]);
 
-  if (loading) {
+  if (auctionQuery.isPending) {
     return (
       <div className="w-full py-40 text-center text-scale-400">
         불러오는 중 ...
@@ -128,11 +112,13 @@ function AuctionRoomPage() {
     );
   }
 
-  if (error || !auction) {
+  if (auctionQuery.isError || !auction) {
     return (
       <div className="w-full px-50 pt-40">
         <div className="max-w-[1160px] mx-auto text-center">
-          <div className="text-2xl text-scale-500 mb-4">{error}</div>
+          <div className="text-2xl text-scale-500 mb-4">
+            {auctionQuery.error?.message ?? "경매를 찾을 수 없습니다."}
+          </div>
           <Button variant="primary" onClick={() => navigate("/auction")}>
             경매 목록으로 돌아가기
           </Button>
@@ -184,7 +170,7 @@ function AuctionRoomPage() {
                   남은 시간
                 </div>
                 <div className="text-2xl font-bold text-scale-500">
-                  {getRemainingTime(auction.end_time)}
+                  {remainingTime || getRemainingTime(auction.end_time)}
                 </div>
               </div>
               <div className="flex items-center w-full py-2.5">

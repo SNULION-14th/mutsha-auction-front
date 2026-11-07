@@ -9,8 +9,10 @@ import {
 import { useState } from "react";
 import PointChargeModalButton from "./PointChargeModal";
 import ProfileSettingModalButton from "./ProfileSettingModal";
+import { useUser } from "@/contexts/UserContext";
 
 export default function ProfileDropdown() {
+  const { logout, user } = useUser();
   const [isPointChargeModalOpen, setIsPointChargeModalOpen] = useState(false);
 
   return (
@@ -23,9 +25,7 @@ export default function ProfileDropdown() {
         sideOffset={12}
         className="p-6 flex flex-col gap-5 w-55 border border-brand-secondary rounded-xl bg-white"
       >
-        <ProfileSettingModalButton
-          imageSrc={"https://via.placeholder.com/80"}
-        />
+        <ProfileSettingModalButton />
         <div className="flex w-full justify-between items-center">
           <div className="flex items-center gap-1">
             <img src={Cup} className="w-8.5" />
@@ -33,7 +33,7 @@ export default function ProfileDropdown() {
           </div>
           <div className="text-lg font-bold text-scale-600">
             <Link to="/payment/history" className="text-brand-primary">
-              10000
+              {user?.points ?? 0}
             </Link>
             잔
           </div>
@@ -42,7 +42,10 @@ export default function ProfileDropdown() {
           open={isPointChargeModalOpen}
           onOpenChange={setIsPointChargeModalOpen}
         />
-        <button className="flex items-center text-base text-scale-400 underline underline-offset-1 cursor-pointer">
+        <button
+          onClick={logout}
+          className="flex items-center text-base text-scale-400 underline underline-offset-1 cursor-pointer"
+        >
           로그아웃
         </button>
       </DropdownMenuContent>
