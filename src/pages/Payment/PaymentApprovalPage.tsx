@@ -1,76 +1,61 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/Button";
-import { getUserInfo, paymentApproval } from "@/apis/api";
+import { usePaymentApproval } from "@/hooks/usePaymentQuery";
 
 export default function PaymentApprovalPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [isProcessing, setIsProcessing] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+
   const hasProcessedRef = useRef(false);
+
+  const [paymentStatus, setPaymentStatus] = useState<
+    "pending" | "success" | "error"
+  >("pending");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { mutateAsync: paymentApprovalMutation } = usePaymentApproval();
+
+  usePaymentSuccessEffect(paymentStatus === "success");
 
   useEffect(() => {
     if (hasProcessedRef.current) {
       return;
     }
 
+    hasProcessedRef.current = true;
+
     const processPayment = async () => {
       try {
+        setPaymentStatus("pending");
         const pgToken = searchParams.get("pg_token");
         const tid = localStorage.getItem("tid");
 
         if (!pgToken || !tid) {
-          setError("결제 정보가 올바르지 않습니다.");
-          setIsProcessing(false);
-          return;
+          throw new Error("결제 정보가 올바르지 않습니다.");
         }
 
-        hasProcessedRef.current = true;
-
-        const approvalSuccess = await paymentApproval({
+        const approved = await paymentApprovalMutation({
           pg_token: pgToken,
           tid: tid,
         });
-
-        if (approvalSuccess) {
-          localStorage.removeItem("tid");
-
-          try {
-            const latestUserInfo = await getUserInfo();
-            if (latestUserInfo) {
-              localStorage.setItem(
-                "userProfile",
-                JSON.stringify(latestUserInfo),
-              );
-            }
-          } catch (userInfoError) {
-            console.error("사용자 정보 가져오기 실패:", userInfoError);
-          }
-
-          setIsProcessing(false);
-
-          const returnTo = sessionStorage.getItem("returnTo") || "/";
-          sessionStorage.removeItem("returnTo");
-
-          setTimeout(() => {
-            navigate(returnTo, { replace: true });
-          }, 3000);
-        } else {
-          setError("결제 승인에 실패했습니다.");
-          setIsProcessing(false);
+        if (!approved) {
+          throw new Error("결제 승인에 실패했습니다.");
         }
-      } catch (error: any) {
-        console.error("결제 승인 실패:", error);
-        setError("결제 승인 중 오류가 발생했습니다.");
-        setIsProcessing(false);
+        setPaymentStatus("success");
+      } catch (error) {
+        setErrorMessage(
+          error instanceof Error
+            ? error.message
+            : "결제 승인 중 오류가 발생했습니다.",
+        );
+        setPaymentStatus("error");
       }
     };
 
     processPayment();
-  }, [searchParams, navigate]); // hasProcessed 의존성 제거
+  }, []);
 
-  if (isProcessing) {
+  if (paymentStatus === "pending") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-bg-default">
         <div className="flex flex-col items-center gap-8">
@@ -86,7 +71,7 @@ export default function PaymentApprovalPage() {
     );
   }
 
-  if (error) {
+  if (paymentStatus === "error") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-bg-default">
         <div className="flex flex-col items-center gap-8 text-center">
@@ -97,7 +82,7 @@ export default function PaymentApprovalPage() {
             <h1 className="text-2xl font-bold text-scale-600 mb-2">
               결제 실패
             </h1>
-            <p className="text-scale-500">{error}</p>
+            <p className="text-scale-500">{errorMessage}</p>
           </div>
           <Button variant="primary" size="large" onClick={() => navigate("/")}>
             메인으로 돌아가기
@@ -131,3 +116,18 @@ export default function PaymentApprovalPage() {
     </div>
   );
 }
+
+const usePaymentSuccessEffect = (success: boolean) => {
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!success) return;
+    localStorage.removeItem("tid");
+
+    const returnTo = sessionStorage.getItem("returnTo") || "/";
+    sessionStorage.removeItem("returnTo");
+
+    setTimeout(() => {
+      navigate(returnTo, { replace: true });
+    }, 3000);
+  }, [success]);
+};
