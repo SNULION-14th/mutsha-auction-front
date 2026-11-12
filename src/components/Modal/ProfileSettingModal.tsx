@@ -1,82 +1,147 @@
-import { Button } from "../Button";
 import { useState } from "react";
+
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Controller, useForm } from "react-hook-form";
+
+import { Button } from "../Button";
 import {
   Dialog,
   DialogContent,
   DialogPortal,
   DialogTrigger,
+  DialogTitle,
 } from "../ui/dialog";
+
 import ProfileImageModal from "./ProfileImageModal";
+import { profileSettingSchema } from "./profileSchema";
+import type { ProfileSettingFormData } from "./profileSchema";
 
-export default function ProfileSettingModal({
-  imageSrc,
-}: {
-  imageSrc: string;
-}) {
-  const [nickname, setNickname] = useState("");
+import { PROFILE_IMAGES, useUser } from "@/contexts/UserContext";
 
-  const [selectedProfileImage, setSelectedProfileImage] = useState(imageSrc);
+export default function ProfileSettingModal() {
+  const { user, updateProfile } = useUser();
+  const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const {
+    register,
+    control,
+    handleSubmit,
+    reset,
+    formState: { errors, isValid, isSubmitting },
+  } = useForm<ProfileSettingFormData>({
+    resolver: zodResolver(profileSettingSchema),
+    mode: "onChange",
+    defaultValues: {
+      nickname: user?.nickname ?? "",
+      profilepicId: Math.max(
+        1,
+        PROFILE_IMAGES.indexOf(user?.profileImage ?? "") + 1,
+      ),
+    },
+  });
 
-  const onlyAllowed = /^[0-9A-Za-z\uAC00-\uD7A3\u1100-\u11FF\u3130-\u318F]+$/u;
-  const tooLong = nickname.length > 10;
-  const invalidChars = !onlyAllowed.test(nickname);
-  const empty = nickname.length === 0;
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) {
+      reset({
+        nickname: user?.nickname ?? "",
+        profilepicId: Math.max(
+          1,
+          PROFILE_IMAGES.indexOf(user?.profileImage ?? "") + 1,
+        ),
+      });
+      setError(null);
+    }
+    setOpen(nextOpen);
+  };
 
-  const showWarning = !empty && (tooLong || invalidChars);
-  const canSubmit = !empty && !tooLong && !invalidChars;
+  const submitProfile = async ({
+    nickname,
+    profilepicId,
+  }: ProfileSettingFormData) => {
+    setError(null);
+    try {
+      await updateProfile(nickname, profilepicId);
+      setOpen(false);
+    } catch {
+      setError("프로필을 저장하지 못했습니다. 다시 시도해주세요.");
+    }
+  };
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogPortal />
       <DialogTrigger asChild>
-        <div className="flex items-center gap-2">
+        <button type="button" className="flex items-center gap-2">
           <img
-            src={"https://via.placeholder.com/80"}
-            alt="profile"
+            src={user?.profileImage}
+            alt=""
             className="h-8 w-8 rounded-full object-cover"
           />
-          <div className="text-lg font-bold text-scale-600">닉네임</div>
-        </div>
+          <div className="text-lg font-bold text-scale-600">
+            {user?.nickname}
+          </div>
+        </button>
       </DialogTrigger>
-      <DialogContent className="w-180">
+      <DialogContent className="w-180" aria-describedby={undefined}>
         <div className="px-20 py-22.5 flex flex-col gap-20">
-          <div className="text-4xl font-bold text-scale-600">프로필 설정</div>
-          <div className="flex flex-col gap-12.5">
-            <div className="mx-auto relative w-28 h-28">
-              <img
-                src={selectedProfileImage}
-                className="w-28 h-28 rounded-full object-cover"
-              />
-
-              <ProfileImageModal
-                selectedProfileImage={selectedProfileImage}
-                onSave={(selected) => setSelectedProfileImage(selected)}
-              />
-            </div>
+          <DialogTitle>프로필 설정</DialogTitle>
+          <form
+            onSubmit={handleSubmit(submitProfile)}
+            className="flex flex-col gap-12.5"
+          >
+            <Controller
+              name="profilepicId"
+              control={control}
+              render={({ field }) => (
+                <div className="mx-auto relative w-28 h-28">
+                  <img
+                    src={PROFILE_IMAGES[field.value - 1]}
+                    alt="선택한 프로필 이미지"
+                    className="w-28 h-28 rounded-full object-cover"
+                  />
+                  <ProfileImageModal
+                    imageCandidates={PROFILE_IMAGES}
+                    selectedProfileImage={PROFILE_IMAGES[field.value - 1]}
+                    onSave={(selected) => {
+                      field.onChange(PROFILE_IMAGES.indexOf(selected) + 1);
+                      field.onBlur();
+                    }}
+                  />
+                </div>
+              )}
+            />
             <div className="flex flex-col gap-3">
               <input
-                value={nickname}
-                onChange={(e) => {
-                  setNickname(e.target.value);
-                }}
+                aria-label="닉네임"
+                {...register("nickname")}
+                aria-invalid={!!errors.nickname}
+                aria-describedby={
+                  errors.nickname ? "nickname-error" : undefined
+                }
                 placeholder="닉네임(최대 10자)"
                 className="w-full h-14 rounded-xl border border-black/10 px-5 outline-none focus:border-brand-primary"
               />
-              {showWarning && (
-                <p className="text-sm text-red-500">
-                  *10자 이내의 한글, 숫자, 영문자를 입력해주세요.
+              {errors.nickname && (
+                <p id="nickname-error" className="text-sm text-red-500">
+                  {errors.nickname.message}
                 </p>
               )}
             </div>
             <Button
-              variant={canSubmit ? "primary" : "disabled"}
-              disabled={!canSubmit}
-              onClick={() => {}}
+              type="submit"
+              variant={isValid ? "primary" : "disabled"}
+              disabled={!isValid || isSubmitting}
+              aria-busy={isSubmitting}
               className="h-14"
             >
-              {"멋시장 시작하기"}
+              {isSubmitting ? "저장 중…" : "멋시장 시작하기"}
             </Button>
-          </div>
+            {error && (
+              <p role="alert" className="text-sm text-red-500">
+                {error}
+              </p>
+            )}
+          </form>
         </div>
       </DialogContent>
     </Dialog>

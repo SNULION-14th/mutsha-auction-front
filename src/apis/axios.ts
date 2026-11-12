@@ -11,6 +11,8 @@ export const api: AxiosInstance = axios.create({
   withCredentials: true, // 쿠키 포함
 });
 
+let refreshPromise: Promise<unknown> | null = null;
+
 // 쿠키에서 토큰을 가져오는 함수
 export function getCookie(name: string): string | null {
   const value = `; ${document.cookie}`;
@@ -29,16 +31,29 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 api.interceptors.response.use(
   (res) => res,
   async (err: AxiosError) => {
-    const originalRequest = err.config;
+    const originalRequest = err.config as
+      | (InternalAxiosRequestConfig & { _retry?: boolean })
+      | undefined;
 
     // Don't retry if this is the refresh endpoint itself (prevents infinite loop)
     const isRefreshEndpoint = originalRequest?.url?.includes("/user/refresh/");
 
     // If any API call fails with 401, try to refresh the token
-    if (err.response?.status === 401 && originalRequest && !isRefreshEndpoint) {
+    if (
+      err.response?.status === 401 &&
+      originalRequest &&
+      !isRefreshEndpoint &&
+      !originalRequest._retry
+    ) {
+      originalRequest._retry = true;
       try {
         // Call /user/refresh/ to get a new access token
-        await api.post("/user/refresh/", {});
+        if (!refreshPromise) {
+          refreshPromise = api.post("/user/refresh/", {}).finally(() => {
+            refreshPromise = null;
+          });
+        }
+        await refreshPromise;
 
         // After getting refreshed access token, retry the original request
         return api.request(originalRequest);
@@ -46,7 +61,7 @@ api.interceptors.response.use(
         // If refresh API also returns 401, redirect to signin
         if (
           refreshError instanceof AxiosError &&
-          refreshError.response?.status === 401
+          [400, 401].includes(refreshError.response?.status ?? 0)
         ) {
           return Promise.reject(
             new RefreshTokenExpiredError("Refresh token expired"),
@@ -60,7 +75,7 @@ api.interceptors.response.use(
   },
 );
 
-class RefreshTokenExpiredError extends Error {
+export class RefreshTokenExpiredError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "RefreshTokenExpiredError";

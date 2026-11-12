@@ -1,70 +1,67 @@
-import { Button } from "../Button";
-import {
-  Profile1,
-  Profile2,
-  Profile3,
-  Profile4,
-  Profile5,
-  Profile6,
-  Edit,
-} from "../../assets/image";
 import { useState } from "react";
+
+import { Edit } from "../../assets/image";
+import { Button } from "../Button";
 import {
   Dialog,
   DialogContent,
   DialogPortal,
   DialogTrigger,
   DialogClose,
+  DialogTitle,
 } from "../ui/dialog";
 
-const CANDIDATES = [
-  Profile1,
-  Profile2,
-  Profile3,
-  Profile4,
-  Profile5,
-  Profile6,
-] as const;
-
 type Props = {
+  imageCandidates: string[];
   selectedProfileImage?: string;
   onSave: (img: string) => void;
 };
 
 export default function ProfileImageModal({
-  selectedProfileImage = CANDIDATES[0],
+  imageCandidates,
+  selectedProfileImage = imageCandidates[0] ?? "",
   onSave,
 }: Props) {
   const [selected, setSelected] = useState<string>(selectedProfileImage);
 
   return (
-    <Dialog>
+    <Dialog
+      onOpenChange={(open) => {
+        if (open) setSelected(selectedProfileImage);
+      }}
+    >
       <DialogPortal />
       <DialogTrigger asChild>
         <button
+          type="button"
           className="absolute -bottom-1 -right-1 w-9 h-9 rounded-full bg-white shadow flex items-center justify-center"
           aria-label="edit profile image"
         >
           <img src={Edit} className="w-9 h-9" />
         </button>
       </DialogTrigger>
-      <DialogContent className="w-105">
+      <DialogContent className="w-105" aria-describedby={undefined}>
         <div className="px-8.5 pt-20 pb-5 flex flex-col gap-15 items-center">
-          <div className="text-2xl font-bold text-scale-600">
+          <DialogTitle className="text-2xl font-bold text-scale-600">
             프로필 이미지 고르기
-          </div>
+          </DialogTitle>
           <div className="grid grid-cols-3 px-10 gap-8">
-            {CANDIDATES.map((candidate) => {
+            {imageCandidates.map((candidate, index) => {
               const isSel = selected === candidate;
               return (
                 <button
+                  type="button"
                   key={candidate}
                   onClick={() => {
                     setSelected(candidate);
                   }}
                   className={`group relative w-20 h-20 rounded-full overflow-hidden ${isSel ? "ring-4 ring-brand-primary" : "ring-0"}`}
                 >
-                  <img src={candidate} className="w-full h-full object-cover" />
+                  <img
+                    src={candidate}
+                    alt={`프로필 이미지 ${index + 1}`}
+                    className="w-full h-full object-cover"
+                  />
                   <span
                     className={`absolute inset-0 bg-black/15 opacity-0 group-hover:opacity-100 transition-opacity ${isSel ? "opacity-100" : ""}`}
                   />
@@ -74,6 +71,7 @@ export default function ProfileImageModal({
           </div>
           <DialogClose asChild>
             <Button
+              type="button"
               variant="primary"
               onClick={() => {
                 onSave(selected);

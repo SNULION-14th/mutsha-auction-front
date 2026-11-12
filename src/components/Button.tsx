@@ -1,4 +1,5 @@
-import { ComponentPropsWithRef, PropsWithChildren } from "react";
+import { ComponentPropsWithRef } from "react";
+
 import { cn } from "../utils/cn";
 
 const sizeClass = {
@@ -47,7 +48,7 @@ export function Button({
   );
 
   return (
-    <button className={buttonClass} {...props}>
+    <button className={buttonClass} disabled={disabled} {...props}>
       {children}
     </button>
   );

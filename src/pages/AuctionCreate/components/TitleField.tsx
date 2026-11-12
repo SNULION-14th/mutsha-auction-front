@@ -1,0 +1,36 @@
+import { useFormContext } from "react-hook-form";
+
+import type { AuctionCreateFormData } from "../schema";
+
+export function TitleField() {
+  const {
+    register,
+    formState: { errors },
+  } = useFormContext<AuctionCreateFormData>();
+  return (
+    <div className="flex flex-col gap-2">
+      <label
+        htmlFor="auction-title"
+        className="text-lg font-bold text-scale-600"
+      >
+        상품명
+      </label>
+      <input
+        id="auction-title"
+        {...register("title")}
+        placeholder="예: 빈티지 가죽 자켓"
+        aria-invalid={!!errors.title}
+        aria-describedby={errors.title ? "auction-title-error" : undefined}
+        className="w-full h-14 rounded-md border border-scale-200 focus:border-brand-primary outline-none px-4 text-base text-scale-500 placeholder:text-scale-300"
+      />
+      {errors.title && (
+        <p
+          id="auction-title-error"
+          className="text-point-warning text-base mt-1"
+        >
+          {errors.title.message}
+        </p>
+      )}
+    </div>
+  );
+}

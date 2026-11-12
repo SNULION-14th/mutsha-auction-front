@@ -1,7 +1,11 @@
-import { AuctionListItem, getAllAuctions } from "@/apis/api";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+
 import { AuctionCard } from "./components/AuctionCard";
+
+import type { AuctionListItem } from "@/apis/api";
+import { Button } from "@/components/Button";
 import Pagination from "@/components/Pagination";
+import { useAuctions } from "@/hooks/useAuctionQuery";
 import { toAbsoluteUrl } from "@/utils/url";
 
 const PAGE_SIZE = 6;
@@ -12,37 +16,20 @@ function pickImage(a: AuctionListItem) {
 }
 
 function AuctionSearchPage() {
-  const [auctions, setAuctions] = useState<AuctionListItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    data: auctions = [],
+    isPending,
+    isError,
+    refetch,
+  } = useAuctions({ status: "active" });
   const [page, setPage] = useState(1);
 
-  useEffect(() => {
-    async function load() {
-      try {
-        setLoading(true);
-        const data = await getAllAuctions({ status: "active" });
-        setAuctions(data);
-      } catch (e) {
-        console.error(e);
-        setError("경매 목록 불러오기 실패");
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, []);
-
   const total = auctions.length;
+  const currentPage = Math.min(page, Math.max(1, Math.ceil(total / PAGE_SIZE)));
   const pageItems = useMemo(() => {
-    const start = (page - 1) * PAGE_SIZE;
+    const start = (currentPage - 1) * PAGE_SIZE;
     return auctions.slice(start, start + PAGE_SIZE);
-  }, [auctions, page]);
-
-  useEffect(() => {
-    const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-    if (page > totalPages) setPage(totalPages);
-  }, [total, page]);
+  }, [auctions, currentPage]);
 
   return (
     <div className="w-full px-50 py-30">
@@ -53,12 +40,21 @@ function AuctionSearchPage() {
             멋사 구성원들의 애착템에 입찰해보세요!
           </div>
         </div>
-        {loading ? (
+        {isPending ? (
           <div className="text-center text-scale-400 py-20">
             불러오는 중 ...
           </div>
-        ) : error ? (
-          <div className="text-center text-point-warning py-20">{error}</div>
+        ) : isError ? (
+          <div role="alert" className="text-center text-point-warning py-20">
+            <p>경매 목록 불러오기 실패</p>
+            <Button
+              type="button"
+              onClick={() => void refetch()}
+              className="mt-4"
+            >
+              다시 시도
+            </Button>
+          </div>
         ) : total === 0 ? (
           <div className="text-center text-scale-400 py-20">
             아직 진행 중인 경매가 없어요.
@@ -80,7 +76,7 @@ function AuctionSearchPage() {
             <Pagination
               totalItems={total}
               pageSize={PAGE_SIZE}
-              currentPage={page}
+              currentPage={currentPage}
               onPageChange={setPage}
               className="mt-8"
             />
