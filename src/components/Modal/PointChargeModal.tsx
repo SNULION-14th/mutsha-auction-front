@@ -1,32 +1,37 @@
+// PointChargeModal.tsx
+
+import { useState } from "react";
 import { Cup } from "@/assets/image";
-import { Dialog, DialogContent, DialogTrigger } from "../ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTrigger,
+  DialogTitle,
+  DialogDescription,
+} from "../ui/dialog";
 import { Button } from "../Button";
 import { numberCommaFormatter } from "@/utils/number";
-import { paymentReady } from "@/apis/api";
 import { useLocation } from "react-router-dom";
+import { useUser } from "@/contexts/UserContext";
+import { usePaymentReady } from "@/hooks/usePaymentQuery";
 
 function PointCharge({ cup, money }: { cup: number; money: number }) {
   const location = useLocation();
+  const { user } = useUser();
+  const { mutateAsync: paymentReadyMutation } = usePaymentReady();
 
-  // FIXME: 로컬스토리지 deprecated
   const handlePayment = async () => {
-    const token =
-      localStorage.getItem("access_token") ||
-      document.cookie
-        .split(";")
-        .find((cookie) => cookie.trim().startsWith("access_token="))
-        ?.split("=")[1];
-
-    if (!token) {
+    if (!user) {
       alert("로그인이 필요합니다. 먼저 로그인해주세요.");
       return;
     }
 
     try {
-      const response = await paymentReady({
+      const response = await paymentReadyMutation({
         point: cup.toString(),
         price: money.toString(),
       });
+
       if (response) {
         sessionStorage.setItem(
           "returnTo",
@@ -65,7 +70,7 @@ function PointCharge({ cup, money }: { cup: number; money: number }) {
   );
 }
 
-export default function PointChargeModal({
+export function PointChargeModal({
   open,
   onOpenChange,
   children,
@@ -76,12 +81,15 @@ export default function PointChargeModal({
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+      {children ? <DialogTrigger asChild>{children}</DialogTrigger> : null}
       <DialogContent className="w-133">
         <div className="flex flex-col items-center px-8 py-15 gap-12.5">
-          <div className="text-2xl font-bold text-scale-600">
+          <DialogTitle className="text-2xl font-bold text-scale-600">
             포인트 충전하기
-          </div>
+          </DialogTitle>
+          <DialogDescription className="sr-only">
+            충전할 포인트 금액을 선택해주세요.
+          </DialogDescription>
           <div className="flex flex-col gap-9 w-full">
             <PointCharge cup={10} money={10000} />
             <PointCharge cup={30} money={30000} />
@@ -91,5 +99,17 @@ export default function PointChargeModal({
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+export default function PointChargeModalButton() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <PointChargeModal open={open} onOpenChange={setOpen}>
+      <Button variant="gray" onClick={() => setOpen(true)}>
+        포인트 충전하기
+      </Button>
+    </PointChargeModal>
   );
 }

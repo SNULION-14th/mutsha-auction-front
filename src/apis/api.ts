@@ -82,8 +82,40 @@ export async function getAllAuctions(
   params: AuctionListParams = {},
 ): Promise<AuctionListItem[]> {
   try {
-    const res = await api.get<AuctionListItem[]>("/auction/", { params });
-    if (res.status === 200) return res.data;
+    const res = await api.get<unknown>("/auction/", { params });
+    if (res.status === 200) {
+      if (Array.isArray(res.data)) return res.data as AuctionListItem[];
+      if (
+        res.data &&
+        typeof res.data === "object" &&
+        "results" in res.data &&
+        Array.isArray((res.data as { results: unknown }).results)
+      ) {
+        return (res.data as { results: AuctionListItem[] }).results;
+      }
+      const payload = res.data;
+      let responseOrigin = "unknown";
+      try {
+        responseOrigin = new URL(
+          res.config.baseURL ?? window.location.origin,
+          window.location.origin,
+        ).origin;
+      } catch {
+        responseOrigin = "invalid API base URL";
+      }
+      const contentType = res.headers["content-type"] ?? "unknown";
+      const dataType = Array.isArray(payload) ? "array" : typeof payload;
+      const objectKeys =
+        payload && typeof payload === "object" && !Array.isArray(payload)
+          ? Object.keys(payload).join(",") || "(none)"
+          : "(not an object)";
+      const responseSummary = `origin=${responseOrigin}; content-type=${contentType}; data-type=${dataType}; keys=${objectKeys}`;
+      console.error(
+        "getAllAuctions unexpected response shape:",
+        responseSummary,
+      );
+      throw new Error(`경매 목록 API 응답 형식 오류: ${responseSummary}`);
+    }
     throw new Error(`경매 목록 요청 실패: ${res.status}`);
   } catch (e: unknown) {
     if (isAxiosError(e)) {
@@ -149,7 +181,14 @@ export async function getUserInfo(): Promise<UserProfile | null> {
     return null;
   } catch (e: unknown) {
     if (isAxiosError(e)) {
-      console.error("getUserInfo error:", e.response?.status, e.response?.data);
+      // A 401 from /user/me/ means the visitor is signed out.
+      if (e.response?.status !== 401) {
+        console.error(
+          "getUserInfo error:",
+          e.response?.status,
+          e.response?.data,
+        );
+      }
     } else {
       console.error("getUserInfo unknown error:", e);
     }

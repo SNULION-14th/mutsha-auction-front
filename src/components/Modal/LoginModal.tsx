@@ -1,17 +1,29 @@
 import { Button } from "../Button";
-import { Dialog, DialogContent, DialogTrigger } from "../ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTrigger,
+  DialogTitle,
+  DialogDescription,
+} from "../ui/dialog";
 import { Kakao } from "../../assets/image";
 import { DialogPortal } from "@radix-ui/react-dialog";
 
 export default function LoginModal() {
   const handleKakaoLogin = () => {
     try {
-      const clientId = String(import.meta.env.VITE_KAKAO_CLIENT_ID);
-      const redirectUri = String(import.meta.env.VITE_KAKAO_REDIRECT_URI);
+      const clientId = import.meta.env.VITE_KAKAO_CLIENT_ID;
+      const redirectUri = import.meta.env.VITE_KAKAO_REDIRECT_URI;
+      if (!clientId || !redirectUri) {
+        throw new Error("카카오 로그인 환경변수가 설정되지 않았습니다.");
+      }
 
-      const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code`;
-
-      window.location.href = kakaoAuthUrl;
+      const params = new URLSearchParams({
+        client_id: clientId,
+        redirect_uri: redirectUri,
+        response_type: "code",
+      });
+      window.location.href = `https://kauth.kakao.com/oauth/authorize?${params.toString()}`;
     } catch (error) {
       console.error("카카오 로그인 오류:", error);
     }
@@ -26,10 +38,12 @@ export default function LoginModal() {
       <DialogContent className="w-150">
         <div className="px-20 py-22.5 flex flex-col gap-10">
           <div className="flex flex-col gap-4">
-            <div className="text-4xl font-bold text-scale-600">로그인</div>
-            <div className="text-lg text-scale-400">
+            <DialogTitle className="text-4xl font-bold text-scale-600">
+              로그인
+            </DialogTitle>
+            <DialogDescription className="text-lg text-scale-400">
               처음이면 자동 회원가입 후 이용할 수 있어요.
-            </div>
+            </DialogDescription>
           </div>
           <Button
             variant="kakao"

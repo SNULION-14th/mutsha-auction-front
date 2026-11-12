@@ -1,4 +1,4 @@
-import { j as t } from "./index-BxdnYUZZ.js";
+import { j as t } from "./index-B_UmRPDz.js";
 function s() {
   return t.jsx("div", {
     className: "text-scale-400",

@@ -1,6 +1,6 @@
-import { u as p, j as e, C as g, B as j, r as f } from "./index-BxdnYUZZ.js";
+import { u as p, j as e, C as g, B as j, r as f } from "./index-B_UmRPDz.js";
 import { L as b } from "./logo_white-B5195eUO.js";
-import { a as N } from "./useAuctionQueries-CRez4Q5v.js";
+import { a as N } from "./useAuctionQueries-1QkmGXdu.js";
 function v({ id: s, img: l, title: t, description: i, current_price: a }) {
   const n = p();
   return e.jsxs("div", {

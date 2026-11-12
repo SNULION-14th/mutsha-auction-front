@@ -6,8 +6,15 @@ import {
   Profile3,
   Profile4,
 } from "@/assets/image";
-import { UserProfile, updateUserProfile, signOut } from "@/apis/api";
-import { createContext, useState, useContext } from "react";
+import type { UserProfile } from "@/apis/api";
+import { createContext, useContext, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  useLogout,
+  useUpdateUserProfile,
+  useUserProfile,
+  userQueryKey,
+} from "@/hooks/useAuthQuery";
 
 //유저 정보
 type UserInfo = {
@@ -19,7 +26,7 @@ type UserInfo = {
 //인증 및 유저 정보 관리 메서드
 type AuthMethod = {
   login: (profile: UserProfile) => void;
-  logout: () => void;
+  logout: () => Promise<boolean>;
   updateProfile: (nickname: string, profilepicId: number) => Promise<boolean>;
 };
 
@@ -30,33 +37,35 @@ type UserContextType = {
 const UserContext = createContext<UserContextType | null>(null);
 
 export const UserProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<UserInfo | null>(null);
+  const queryClient = useQueryClient();
+  const { data: userProfile } = useUserProfile();
+  const { mutateAsync: logoutMutation } = useLogout();
+  const { mutateAsync: updateProfileMutation } = useUpdateUserProfile();
+
+  const user = useMemo(() => {
+    if (!userProfile) return null;
+    return {
+      profileImage: getProfileImageById(userProfile.profilepic_id),
+      nickname: userProfile.nickname ?? "",
+      points: userProfile.remaining_points,
+    };
+  }, [userProfile]);
 
   const login = (profile: UserProfile) => {
-    setUser({
-      profileImage: getProfileImageById(profile.profilepic_id),
-      nickname: profile.nickname ?? "",
-      points: profile.remaining_points,
-    });
+    queryClient.setQueryData(userQueryKey, profile);
   };
 
   const logout = async () => {
-    await signOut();
-    setUser(null);
+    return await logoutMutation();
   };
-  const updateProfile = async (
-    nickname: string,
-    profilepicId: number,
-  ): Promise<boolean> => {
-    const response = await updateUserProfile(nickname, profilepicId);
-    if (!response) return false;
 
-    setUser({
-      profileImage: getProfileImageById(response.profilepic_id),
-      nickname: response.nickname ?? "",
-      points: response.remaining_points,
-    });
-    return true;
+  const updateProfile = async (nickname: string, profilepicId: number) => {
+    try {
+      await updateProfileMutation({ nickname, profilepicId });
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   return (

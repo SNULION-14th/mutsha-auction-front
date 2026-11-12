@@ -1,6 +1,6 @@
-import { u as l, j as e, B as s } from "./index-BxdnYUZZ.js";
+import { u as t, j as e, B as s } from "./index-B_UmRPDz.js";
 function i() {
-  const a = l();
+  const a = t();
   return e.jsx("div", {
     className: "min-h-screen flex items-center justify-center bg-bg-default",
     children: e.jsxs("div", {
@@ -8,18 +8,18 @@ function i() {
       children: [
         e.jsx("div", {
           className:
-            "w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center",
-          children: e.jsx("span", { className: "text-4xl", children: "⚠️" }),
+            "w-20 h-20 bg-red-100 rounded-full flex items-center justify-center",
+          children: e.jsx("span", { className: "text-4xl", children: "❌" }),
         }),
         e.jsxs("div", {
           children: [
             e.jsx("h1", {
               className: "text-2xl font-bold text-scale-600 mb-2",
-              children: "결제가 취소되었습니다",
+              children: "결제에 실패하였습니다",
             }),
             e.jsx("p", {
               className: "text-scale-500",
-              children: "결제를 취소하셨습니다. 포인트는 충전되지 않았습니다.",
+              children: "결제 처리 중 오류가 발생했습니다. 다시 시도해주세요.",
             }),
           ],
         }),

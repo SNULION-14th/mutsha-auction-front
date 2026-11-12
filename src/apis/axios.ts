@@ -4,7 +4,26 @@ import axios, {
   InternalAxiosRequestConfig,
 } from "axios";
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL as string;
+const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim().replace(
+  /\/+$/,
+  "",
+);
+const frontendOrigin = window.location.origin;
+const configuredBaseResolvesToFrontend = (() => {
+  if (!configuredBaseUrl) return true;
+  try {
+    return new URL(configuredBaseUrl, frontendOrigin).origin === frontendOrigin;
+  } catch {
+    return false;
+  }
+})();
+
+// In local development, a missing or same-origin API base points to Vite's HTML fallback.
+// The Django API for this project runs on port 8000.
+const BASE_URL =
+  import.meta.env.DEV && configuredBaseResolvesToFrontend
+    ? "http://localhost:8000"
+    : (configuredBaseUrl ?? frontendOrigin);
 
 export const api: AxiosInstance = axios.create({
   baseURL: `${BASE_URL}/api`,
@@ -25,34 +44,32 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   return config;
 });
 
-// Response interceptor to handle 401 errors and token refresh
+type RefreshableRequestConfig = InternalAxiosRequestConfig & {
+  _refreshRetryAttempted?: boolean;
+};
+
+// Refresh expired access tokens only when a refresh cookie exists.
 api.interceptors.response.use(
   (res) => res,
   async (err: AxiosError) => {
-    const originalRequest = err.config;
-
-    // Don't retry if this is the refresh endpoint itself (prevents infinite loop)
+    const originalRequest = err.config as RefreshableRequestConfig | undefined;
     const isRefreshEndpoint = originalRequest?.url?.includes("/user/refresh/");
+    const hasRefreshCookie = Boolean(getCookie("refresh_token"));
 
-    // If any API call fails with 401, try to refresh the token
-    if (err.response?.status === 401 && originalRequest && !isRefreshEndpoint) {
+    if (
+      err.response?.status === 401 &&
+      originalRequest &&
+      !isRefreshEndpoint &&
+      !originalRequest._refreshRetryAttempted &&
+      hasRefreshCookie
+    ) {
+      originalRequest._refreshRetryAttempted = true;
       try {
-        // Call /user/refresh/ to get a new access token
         await api.post("/user/refresh/", {});
-
-        // After getting refreshed access token, retry the original request
         return api.request(originalRequest);
-      } catch (refreshError) {
-        // If refresh API also returns 401, redirect to signin
-        if (
-          refreshError instanceof AxiosError &&
-          refreshError.response?.status === 401
-        ) {
-          return Promise.reject(
-            new RefreshTokenExpiredError("Refresh token expired"),
-          );
-        }
-        return Promise.reject(refreshError);
+      } catch {
+        // Preserve the original 401; callers can treat the session as signed out.
+        return Promise.reject(err);
       }
     }
 

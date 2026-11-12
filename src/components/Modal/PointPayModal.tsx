@@ -1,12 +1,18 @@
 import { getUserInfo, placeBid, UserProfile, AuctionDetail } from "@/apis/api";
 import { useEffect, useMemo, useState } from "react";
-import { Dialog, DialogContent, DialogTrigger } from "../ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTrigger,
+  DialogTitle,
+  DialogDescription,
+} from "../ui/dialog";
 import { formatNumber } from "@/utils/number";
 import { Button } from "../Button";
 import InfoModal from "./InfoModal";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "@/constants/router";
-import PointChargeModal from "./PointChargeModal";
+import { PointChargeModal } from "./PointChargeModal";
 import { DialogPortal } from "@radix-ui/react-dialog";
 
 export default function PointPayModal({
@@ -75,25 +81,23 @@ export default function PointPayModal({
         <DialogContent className="w-[532px]">
           <div className="px-8 pt-20 pb-5 flex flex-col items-center gap-5">
             {!isInsufficient ? (
-              <p className="text-scale-600 text-2xl font-bold text-center">
+              <DialogTitle className="text-scale-600 text-2xl font-bold text-center">
                 <span className="font-bold text-brand-primary">
                   {formatNumber(bid)}
                 </span>
                 <span className="font-bold text-brand-primary"> 잔</span>으로 이
                 상품에 <br />
                 입찰할까요?
-              </p>
+              </DialogTitle>
             ) : (
-              <p className="text-scale-600 text-2xl font-bold text-center">
+              <DialogTitle className="text-scale-600 text-2xl font-bold text-center">
                 포인트가 부족합니다. <br /> 지금 바로 충전하시겠습니까?
-              </p>
+              </DialogTitle>
             )}
-            <div>
-              <span className="text-xl font-bold text-scale-500">
-                내 포인트 :
-                {loading ? "불러오는 중..." : ` ${formatNumber(myPoints)} 잔`}
-              </span>
-            </div>
+            <DialogDescription className="text-xl font-bold text-scale-500">
+              내 포인트 :
+              {loading ? "불러오는 중..." : ` ${formatNumber(myPoints)} 잔`}
+            </DialogDescription>
             <div className="flex w-full items-center justify-center pt-5 gap-5">
               <Button
                 variant="outlined"

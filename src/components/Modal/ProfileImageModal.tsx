@@ -12,6 +12,8 @@ import { useState } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
+  DialogDescription,
   DialogPortal,
   DialogTrigger,
   DialogClose,
@@ -53,9 +55,12 @@ export default function ProfileImageModal({
       </DialogTrigger>
       <DialogContent className="w-105">
         <div className="px-8.5 pt-20 pb-5 flex flex-col gap-15 items-center">
-          <div className="text-2xl font-bold text-scale-600">
+          <DialogTitle className="text-2xl font-bold text-scale-600">
             프로필 이미지 고르기
-          </div>
+          </DialogTitle>
+          <DialogDescription className="sr-only">
+            사용할 프로필 이미지를 선택해주세요.
+          </DialogDescription>
           <div className="grid grid-cols-3 px-10 gap-8">
             {imageCandidates.map((candidate) => {
               const isSel = selected === candidate;

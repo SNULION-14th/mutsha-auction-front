@@ -6,6 +6,8 @@ import { Button } from "../Button";
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
+  DialogDescription,
   DialogPortal,
   DialogTrigger,
 } from "../ui/dialog";
@@ -86,7 +88,12 @@ export default function ProfileSettingModal() {
           onSubmit={handleSubmit}
           className="px-20 py-22.5 flex flex-col gap-20"
         >
-          <h2 className="text-4xl font-bold text-scale-600">프로필 설정</h2>
+          <DialogTitle className="text-4xl font-bold text-scale-600">
+            프로필 설정
+          </DialogTitle>
+          <DialogDescription className="sr-only">
+            닉네임과 프로필 이미지를 변경할 수 있습니다.
+          </DialogDescription>
           <div className="flex flex-col gap-12.5">
             <div className="mx-auto relative w-28 h-28">
               <img
