@@ -1,7 +1,9 @@
 import { useEffect, useState, useRef } from "react";
+
 import { useNavigate, useSearchParams } from "react-router-dom";
+
 import { Button } from "@/components/Button";
-import { getUserInfo, paymentApproval } from "@/apis/api";
+import { usePaymentApproval } from "@/hooks/usePaymentQuery";
 
 export default function PaymentApprovalPage() {
   const navigate = useNavigate();
@@ -9,11 +11,14 @@ export default function PaymentApprovalPage() {
   const [isProcessing, setIsProcessing] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const hasProcessedRef = useRef(false);
+  const { mutateAsync: paymentApprovalMutation } = usePaymentApproval();
+  usePaymentSuccessEffect(!isProcessing && !error);
 
   useEffect(() => {
     if (hasProcessedRef.current) {
       return;
     }
+    hasProcessedRef.current = true;
 
     const processPayment = async () => {
       try {
@@ -26,49 +31,25 @@ export default function PaymentApprovalPage() {
           return;
         }
 
-        hasProcessedRef.current = true;
-
-        const approvalSuccess = await paymentApproval({
+        await paymentApprovalMutation({
           pg_token: pgToken,
           tid: tid,
         });
 
-        if (approvalSuccess) {
-          localStorage.removeItem("tid");
-
-          try {
-            const latestUserInfo = await getUserInfo();
-            if (latestUserInfo) {
-              localStorage.setItem(
-                "userProfile",
-                JSON.stringify(latestUserInfo),
-              );
-            }
-          } catch (userInfoError) {
-            console.error("사용자 정보 가져오기 실패:", userInfoError);
-          }
-
-          setIsProcessing(false);
-
-          const returnTo = sessionStorage.getItem("returnTo") || "/";
-          sessionStorage.removeItem("returnTo");
-
-          setTimeout(() => {
-            navigate(returnTo, { replace: true });
-          }, 3000);
-        } else {
-          setError("결제 승인에 실패했습니다.");
-          setIsProcessing(false);
-        }
-      } catch (error: any) {
+        setIsProcessing(false);
+      } catch (error: unknown) {
         console.error("결제 승인 실패:", error);
-        setError("결제 승인 중 오류가 발생했습니다.");
+        setError(
+          error instanceof Error
+            ? error.message
+            : "결제 승인 중 오류가 발생했습니다.",
+        );
         setIsProcessing(false);
       }
     };
 
     processPayment();
-  }, [searchParams, navigate]); // hasProcessed 의존성 제거
+  }, [searchParams, paymentApprovalMutation]);
 
   if (isProcessing) {
     return (
@@ -130,4 +111,18 @@ export default function PaymentApprovalPage() {
       </div>
     </div>
   );
+}
+
+function usePaymentSuccessEffect(success: boolean) {
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!success) return;
+    localStorage.removeItem("tid");
+    const returnTo = sessionStorage.getItem("returnTo") || "/";
+    const timeout = window.setTimeout(() => {
+      sessionStorage.removeItem("returnTo");
+      navigate(returnTo, { replace: true });
+    }, 3000);
+    return () => window.clearTimeout(timeout);
+  }, [success, navigate]);
 }

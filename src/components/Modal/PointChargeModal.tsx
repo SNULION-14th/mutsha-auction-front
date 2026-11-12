@@ -1,29 +1,32 @@
-import { Cup } from "@/assets/image";
-import { Dialog, DialogContent, DialogTrigger } from "../ui/dialog";
-import { Button } from "../Button";
-import { numberCommaFormatter } from "@/utils/number";
-import { paymentReady } from "@/apis/api";
+import { isAxiosError } from "axios";
 import { useLocation } from "react-router-dom";
+
+import { Button } from "../Button";
+import {
+  Dialog,
+  DialogContent,
+  DialogTrigger,
+  DialogTitle,
+} from "../ui/dialog";
+
+import { Cup } from "@/assets/image";
+import { useUser } from "@/contexts/UserContext";
+import { usePaymentReady } from "@/hooks/usePaymentQuery";
+import { numberCommaFormatter } from "@/utils/number";
 
 function PointCharge({ cup, money }: { cup: number; money: number }) {
   const location = useLocation();
+  const { user } = useUser();
+  const { mutateAsync: paymentReadyMutation, isPending } = usePaymentReady();
 
-  // FIXME: 로컬스토리지 deprecated
   const handlePayment = async () => {
-    const token =
-      localStorage.getItem("access_token") ||
-      document.cookie
-        .split(";")
-        .find((cookie) => cookie.trim().startsWith("access_token="))
-        ?.split("=")[1];
-
-    if (!token) {
+    if (!user) {
       alert("로그인이 필요합니다. 먼저 로그인해주세요.");
       return;
     }
 
     try {
-      const response = await paymentReady({
+      const response = await paymentReadyMutation({
         point: cup.toString(),
         price: money.toString(),
       });
@@ -37,9 +40,9 @@ function PointCharge({ cup, money }: { cup: number; money: number }) {
         localStorage.setItem("tid", response.tid);
         window.location.href = response.next_redirect_pc_url;
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("결제 준비 실패:", error);
-      if (error.response?.status === 401) {
+      if (isAxiosError(error) && error.response?.status === 401) {
         alert("로그인이 필요합니다. 먼저 로그인해주세요.");
       } else {
         alert("결제 준비에 실패했습니다. 다시 시도해주세요.");
@@ -58,6 +61,7 @@ function PointCharge({ cup, money }: { cup: number; money: number }) {
         isRounded={true}
         className="text-lg font-regular px-10 py-3"
         onClick={handlePayment}
+        disabled={isPending}
       >
         ₩ {numberCommaFormatter(money)}
       </Button>
@@ -77,11 +81,11 @@ export default function PointChargeModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="w-133">
+      <DialogContent className="w-133" aria-describedby={undefined}>
         <div className="flex flex-col items-center px-8 py-15 gap-12.5">
-          <div className="text-2xl font-bold text-scale-600">
+          <DialogTitle className="text-2xl font-bold text-scale-600">
             포인트 충전하기
-          </div>
+          </DialogTitle>
           <div className="flex flex-col gap-9 w-full">
             <PointCharge cup={10} money={10000} />
             <PointCharge cup={30} money={30000} />

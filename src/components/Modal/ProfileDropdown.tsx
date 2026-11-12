@@ -1,16 +1,23 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+
+import { Link, useNavigate } from "react-router-dom";
+
 import { Button } from "../Button";
-import { Cup } from "@/assets/image";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import { useState } from "react";
+
 import PointChargeModalButton from "./PointChargeModal";
 import ProfileSettingModalButton from "./ProfileSettingModal";
 
+import { Cup } from "@/assets/image";
+import { useUser } from "@/contexts/UserContext";
+
 export default function ProfileDropdown() {
+  const { user, logout } = useUser();
+  const navigate = useNavigate();
   const [isPointChargeModalOpen, setIsPointChargeModalOpen] = useState(false);
 
   return (
@@ -23,9 +30,7 @@ export default function ProfileDropdown() {
         sideOffset={12}
         className="p-6 flex flex-col gap-5 w-55 border border-brand-secondary rounded-xl bg-white"
       >
-        <ProfileSettingModalButton
-          imageSrc={"https://via.placeholder.com/80"}
-        />
+        <ProfileSettingModalButton />
         <div className="flex w-full justify-between items-center">
           <div className="flex items-center gap-1">
             <img src={Cup} className="w-8.5" />
@@ -33,7 +38,7 @@ export default function ProfileDropdown() {
           </div>
           <div className="text-lg font-bold text-scale-600">
             <Link to="/payment/history" className="text-brand-primary">
-              10000
+              {user?.points}
             </Link>
             잔
           </div>
@@ -41,8 +46,24 @@ export default function ProfileDropdown() {
         <PointChargeModalButton
           open={isPointChargeModalOpen}
           onOpenChange={setIsPointChargeModalOpen}
-        />
-        <button className="flex items-center text-base text-scale-400 underline underline-offset-1 cursor-pointer">
+        >
+          <Button variant="primary">포인트 충전하기</Button>
+        </PointChargeModalButton>
+        <button
+          className="flex items-center text-base text-scale-400 underline underline-offset-1 cursor-pointer"
+          onClick={async () => {
+            try {
+              await logout();
+            } catch (error) {
+              console.error("로그아웃 실패:", error);
+              alert(
+                "서버 로그아웃에 실패했습니다. 다시 로그인 후 시도해주세요.",
+              );
+            } finally {
+              navigate("/");
+            }
+          }}
+        >
           로그아웃
         </button>
       </DropdownMenuContent>

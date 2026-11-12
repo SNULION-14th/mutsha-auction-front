@@ -1,5 +1,6 @@
 import { isAxiosError } from "axios";
-import { api } from "./axios";
+
+import { api, RefreshTokenExpiredError } from "./axios";
 
 export type UserCore = {
   id: number;
@@ -80,23 +81,10 @@ export type AuctionDetail = {
 
 export async function getAllAuctions(
   params: AuctionListParams = {},
+  signal?: AbortSignal,
 ): Promise<AuctionListItem[]> {
-  try {
-    const res = await api.get<AuctionListItem[]>("/auction/", { params });
-    if (res.status === 200) return res.data;
-    return [];
-  } catch (e: unknown) {
-    if (isAxiosError(e)) {
-      console.error(
-        "getAllAuctions error:",
-        e.response?.status,
-        e.response?.data,
-      );
-    } else {
-      console.error("getAllAuctions unknown error:", e);
-    }
-    return [];
-  }
+  const res = await api.get<AuctionListItem[]>("/auction/", { params, signal });
+  return res.data;
 }
 
 export async function getRecommendedAuctions(): Promise<AuctionListItem[]> {
@@ -140,21 +128,27 @@ export async function getAuctionDetail(
   }
 }
 
-export async function getUserInfo(): Promise<UserProfile | null> {
+export async function getUserInfo(
+  signal?: AbortSignal,
+): Promise<UserProfile | null> {
   try {
-    const response = await api.get<UserProfile>("/user/me/");
+    const response = await api.get<UserProfile>("/user/me/", { signal });
     if (response.status === 200) {
       return response.data;
     }
     return null;
   } catch (e: unknown) {
-    if (isAxiosError(e)) {
-      console.error("getUserInfo error:", e.response?.status, e.response?.data);
-    } else {
-      console.error("getUserInfo unknown error:", e);
-    }
-    return null;
+    if (
+      e instanceof RefreshTokenExpiredError ||
+      (isAxiosError(e) && e.response?.status === 401)
+    )
+      return null;
+    throw e;
   }
+}
+
+export async function signOut(): Promise<void> {
+  await api.post("/user/signout/");
 }
 
 export type PaymentReadyRequest = {
@@ -174,64 +168,39 @@ export type PaymentReadyResponse = {
 
 export async function paymentReady(
   data: PaymentReadyRequest,
-): Promise<PaymentReadyResponse | null> {
-  try {
-    const response = await api.post<PaymentReadyResponse>("/payment/ready/", {
-      partner_order_id: `order_${Date.now()}`,
-      partner_user_id: "user",
-      item_name: data.point,
-      quantity: 1,
-      total_amount: parseInt(data.price),
-      vat_amount: 0,
-      tax_free_amount: 0,
-      approval_url: `${window.location.origin}/payment/approve`,
-      cancel_url: `${window.location.origin}/payment/cancel`,
-      fail_url: `${window.location.origin}/payment/fail`,
-    });
+): Promise<PaymentReadyResponse> {
+  const response = await api.post<PaymentReadyResponse>("/payment/ready/", {
+    partner_order_id: `order_${Date.now()}`,
+    partner_user_id: "user",
+    item_name: data.point,
+    quantity: 1,
+    total_amount: parseInt(data.price),
+    vat_amount: 0,
+    tax_free_amount: 0,
+    approval_url: `${window.location.origin}/payment/approve`,
+    cancel_url: `${window.location.origin}/payment/cancel`,
+    fail_url: `${window.location.origin}/payment/fail`,
+  });
 
-    if (response.status === 200) {
-      return response.data;
-    }
-    return null;
-  } catch (e: unknown) {
-    if (isAxiosError(e)) {
-      console.error(
-        "paymentReady error:",
-        e.response?.status,
-        e.response?.data,
-      );
-    } else {
-      console.error("paymentReady unknown error:", e);
-    }
-    return null;
-  }
+  return response.data;
 }
 
 export async function updateUserProfile(
   nickname: string,
   profilepicId: number,
-): Promise<UserProfile | null> {
-  try {
-    const response = await api.put<UserProfile>("/user/me/", {
-      nickname: nickname,
-      profilepic_id: profilepicId,
-    });
-    if (response.status === 200) {
-      return response.data;
-    }
-    return null;
-  } catch (e: unknown) {
-    if (isAxiosError(e)) {
-      console.error(
-        "updateUserProfile error:",
-        e.response?.status,
-        e.response?.data,
-      );
-    } else {
-      console.error("updateUserProfile unknown error:", e);
-    }
-    return null;
-  }
+): Promise<
+  Pick<UserProfile, "user" | "nickname" | "profilepic_id" | "remaining_points">
+> {
+  const response = await api.put<
+    Pick<
+      UserProfile,
+      "user" | "nickname" | "profilepic_id" | "remaining_points"
+    >
+  >("/user/me/", {
+    nickname: nickname,
+    profilepic_id: profilepicId,
+  });
+  return response.data;
 }
 
 export type PaymentApprovalRequest = {
@@ -242,27 +211,14 @@ export type PaymentApprovalRequest = {
 export async function paymentApproval(
   data: PaymentApprovalRequest,
 ): Promise<boolean> {
-  try {
-    const response = await api.post("/payment/approve/", {
-      pg_token: data.pg_token,
-      tid: data.tid,
-    });
-    if (response.status === 200) {
-      return true;
-    }
-    return false;
-  } catch (e: unknown) {
-    if (isAxiosError(e)) {
-      console.error(
-        "paymentApproval error:",
-        e.response?.status,
-        e.response?.data,
-      );
-    } else {
-      console.error("paymentApproval unknown error:", e);
-    }
-    return false;
+  const response = await api.post("/payment/approve/", {
+    pg_token: data.pg_token,
+    tid: data.tid,
+  });
+  if (response.status === 200) {
+    return true;
   }
+  throw new Error("결제 승인에 실패했습니다.");
 }
 
 export type PaymentHistoryItem = {
@@ -339,37 +295,23 @@ export type CreateAuctionRequest = {
 
 export async function createAuction(
   data: CreateAuctionRequest,
-): Promise<AuctionDetail | null> {
-  try {
-    if (data.image_file) {
-      const fd = new FormData();
-      fd.append("title", data.title);
-      fd.append("description", data.description);
-      fd.append("starting_price", String(data.starting_price));
-      fd.append("end_time", data.end_time);
-      fd.append("image_file", data.image_file, data.image_file.name);
+): Promise<AuctionDetail> {
+  if (data.image_file) {
+    const fd = new FormData();
+    fd.append("title", data.title);
+    fd.append("description", data.description);
+    fd.append("starting_price", String(data.starting_price));
+    fd.append("end_time", data.end_time);
+    fd.append("image_file", data.image_file, data.image_file.name);
 
-      const res = await api.post<AuctionDetail>("/auction/create/", fd);
-      if (res.status === 201) return res.data;
-      return null;
-    }
-
-    const { image_file, ...json } = data;
-    const res = await api.post<AuctionDetail>("/auction/create/", json);
-    if (res.status === 201) return res.data;
-    return null;
-  } catch (e: unknown) {
-    if (isAxiosError(e)) {
-      console.error(
-        "createAuction error:",
-        e.response?.status,
-        e.response?.data,
-      );
-    } else {
-      console.error("createAuction unknown error:", e);
-    }
-    return null;
+    const res = await api.post<AuctionDetail>("/auction/create/", fd);
+    return res.data;
   }
+
+  const json = { ...data };
+  delete json.image_file;
+  const res = await api.post<AuctionDetail>("/auction/create/", json);
+  return res.data;
 }
 
 export type MyAuctionHistory = {
