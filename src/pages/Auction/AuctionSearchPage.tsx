@@ -1,8 +1,9 @@
-import { AuctionListItem, getAllAuctions } from "@/apis/api";
+import { AuctionListItem } from "@/apis/api";
 import { useEffect, useMemo, useState } from "react";
 import { AuctionCard } from "./components/AuctionCard";
 import Pagination from "@/components/Pagination";
 import { toAbsoluteUrl } from "@/utils/url";
+import { useAuctionList } from "@/hooks/useAuctionQuery";
 
 const PAGE_SIZE = 6;
 
@@ -12,26 +13,16 @@ function pickImage(a: AuctionListItem) {
 }
 
 function AuctionSearchPage() {
-  const [auctions, setAuctions] = useState<AuctionListItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // 서버 상태는 TanStack Query로 관리 (경매 등록 시 캐시 무효화 → 자동 refetch)
+  const {
+    data: auctions = [],
+    isLoading: loading,
+    isError,
+  } = useAuctionList({
+    status: "active",
+  });
+  const error = isError ? "경매 목록 불러오기 실패" : null;
   const [page, setPage] = useState(1);
-
-  useEffect(() => {
-    async function load() {
-      try {
-        setLoading(true);
-        const data = await getAllAuctions({ status: "active" });
-        setAuctions(data);
-      } catch (e) {
-        console.error(e);
-        setError("경매 목록 불러오기 실패");
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, []);
 
   const total = auctions.length;
   const pageItems = useMemo(() => {

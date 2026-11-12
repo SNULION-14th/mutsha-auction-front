@@ -1,0 +1,504 @@
+From 4c39c7c3d45fc9d09b5697bc715ecd98365674c7 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Thu, 12 Nov 2026 14:28:36 +0900
+Subject: [PATCH] =?UTF-8?q?feat:=20sem5=20=EA=B3=BC=EC=A0=9C=20-=20?=
+ =?UTF-8?q?=ED=94=84=EB=A1=9C=ED=95=84=20=EC=84=A4=EC=A0=95=20=ED=8F=BC=20?=
+ =?UTF-8?q?RHF+Zod=20=EB=A6=AC=ED=8C=A9=ED=86=A0=EB=A7=81,=20=EA=B2=BD?=
+ =?UTF-8?q?=EB=A7=A4=20=EB=93=B1=EB=A1=9D=20API=20TanStack=20Query=20?=
+ =?UTF-8?q?=EC=97=B0=EA=B2=B0?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+- ProfileSettingModal: useState 기반 검증을 React Hook Form + Zod 스키마로 위임
+- ProfileImageModal: form 내부 버튼 submit 방지, 열릴 때 선택 상태 동기화
+- useAuctionQuery: useAuctionList / useCreateAuction 훅 추가 (등록 성공 시 목록 캐시 무효화)
+- AuctionCreatePage: 경매 등록 API 연결, 등록 중 '경매 등록 중...' 표시, 완료 후 /auction 이동
+- AuctionSearchPage: 경매 목록을 useAuctionList로 관리
+- Button: disabled prop이 실제 button에 전달되지 않던 문제 수정
+- package.json: react-hook-form 의존성 추가
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NvnQXeNUNx1LjLEhF6Nw8T
+---
+ package.json                                  |   1 +
+ src/components/Button.tsx                     |   2 +-
+ src/components/Modal/ProfileImageModal.tsx    |  10 +-
+ src/components/Modal/ProfileSettingModal.tsx  | 117 ++++++++++--------
+ .../Modal/schema/profileSettingSchema.ts      |  16 +++
+ src/hooks/useAuctionQuery.ts                  |  51 ++++++++
+ src/pages/Auction/AuctionSearchPage.tsx       |  27 ++--
+ src/pages/AuctionCreate/AuctionCreatePage.tsx |  61 ++++++---
+ 8 files changed, 193 insertions(+), 92 deletions(-)
+ create mode 100644 src/components/Modal/schema/profileSettingSchema.ts
+ create mode 100644 src/hooks/useAuctionQuery.ts
+
+diff --git a/package.json b/package.json
+index e37c780..d167104 100644
+--- a/package.json
++++ b/package.json
+@@ -27,6 +27,7 @@
+     "prettier": "^3.6.2",
+     "react": "^19.1.1",
+     "react-dom": "^19.1.1",
++    "react-hook-form": "^7.66.0",
+     "react-router-dom": "^7.9.1",
+     "tailwind-merge": "^3.3.1",
+     "tailwindcss": "^4.1.13",
+diff --git a/src/components/Button.tsx b/src/components/Button.tsx
+index fadb018..55f8a27 100644
+--- a/src/components/Button.tsx
++++ b/src/components/Button.tsx
+@@ -47,7 +47,7 @@ export function Button({
+   );
+ 
+   return (
+-    <button className={buttonClass} {...props}>
++    <button className={buttonClass} disabled={disabled} {...props}>
+       {children}
+     </button>
+   );
+diff --git a/src/components/Modal/ProfileImageModal.tsx b/src/components/Modal/ProfileImageModal.tsx
+index 51b9db5..bc15ee2 100644
+--- a/src/components/Modal/ProfileImageModal.tsx
++++ b/src/components/Modal/ProfileImageModal.tsx
+@@ -25,10 +25,16 @@ export default function ProfileImageModal({
+   const [selected, setSelected] = useState<string>(selectedProfileImage);
+ 
+   return (
+-    <Dialog>
++    <Dialog
++      onOpenChange={(open) => {
++        // 열릴 때마다 현재 폼 값으로 선택 상태 동기화
++        if (open) setSelected(selectedProfileImage);
++      }}
++    >
+       <DialogPortal />
+       <DialogTrigger asChild>
+         <button
++          type="button" // form 안에 있으므로 submit 방지
+           className="absolute -bottom-1 -right-1 w-9 h-9 rounded-full bg-white shadow flex items-center justify-center"
+           aria-label="edit profile image"
+         >
+@@ -45,6 +51,7 @@ export default function ProfileImageModal({
+               const isSel = selected === candidate;
+               return (
+                 <button
++                  type="button"
+                   key={candidate}
+                   onClick={() => {
+                     setSelected(candidate);
+@@ -61,6 +68,7 @@ export default function ProfileImageModal({
+           </div>
+           <DialogClose asChild>
+             <Button
++              type="button"
+               variant="primary"
+               onClick={() => {
+                 onSave(selected);
+diff --git a/src/components/Modal/ProfileSettingModal.tsx b/src/components/Modal/ProfileSettingModal.tsx
+index eda9f7d..d087d31 100644
+--- a/src/components/Modal/ProfileSettingModal.tsx
++++ b/src/components/Modal/ProfileSettingModal.tsx
+@@ -1,53 +1,64 @@
+ import { Button } from "../Button";
+ import { useState } from "react";
++import { Controller, useForm } from "react-hook-form";
++import { zodResolver } from "@hookform/resolvers/zod";
+ import {
+   Dialog,
+-  DialogClose,
+   DialogContent,
+   DialogPortal,
+   DialogTrigger,
+ } from "../ui/dialog";
+ import ProfileImageModal from "./ProfileImageModal";
+-import { useUser } from "@/contexts/UserContext";
+-import { PROFILE_IMAGES } from "@/contexts/UserContext";
++import { useUser, PROFILE_IMAGES } from "@/contexts/UserContext";
++import {
++  profileSettingSchema,
++  ProfileSettingFormData,
++} from "./schema/profileSettingSchema";
+ 
+ export default function ProfileSettingModal() {
+   const { user, updateProfile } = useUser();
+-  const [nickname, setNickname] = useState(user?.nickname ?? "");
+-  const [selectedProfileImage, setSelectedProfileImage] = useState(
+-    user?.profileImage,
+-  );
++  const [open, setOpen] = useState(false);
+ 
+-  const onlyAllowed = /^[0-9A-Za-z\uAC00-\uD7A3\u1100-\u11FF\u3130-\u318F]+$/u;
+-  const tooLong = nickname.length > 10;
+-  const invalidChars = !onlyAllowed.test(nickname);
+-  const empty = nickname.length === 0;
++  const getDefaultValues = (): ProfileSettingFormData => ({
++    nickname: user?.nickname ?? "",
++    profileImage: user?.profileImage ?? PROFILE_IMAGES[0],
++  });
+ 
+-  const showWarning = !empty && (tooLong || invalidChars);
+-  const canSubmit = !empty && !tooLong && !invalidChars;
++  const {
++    register,
++    control,
++    handleSubmit,
++    reset,
++    watch,
++    formState: { errors, isValid, isSubmitting },
++  } = useForm<ProfileSettingFormData>({
++    resolver: zodResolver(profileSettingSchema),
++    mode: "onChange",
++    defaultValues: getDefaultValues(),
++  });
+ 
+-  const handleSubmit = async () => {
+-    if (canSubmit) {
+-      await updateProfile(
+-        nickname,
+-        PROFILE_IMAGES.indexOf(selectedProfileImage ?? "") + 1,
+-      );
+-    }
++  // 모달이 열릴 때마다 현재 유저 정보로 폼 초기화
++  const handleOpenChange = (next: boolean) => {
++    if (next) reset(getDefaultValues());
++    setOpen(next);
+   };
+ 
+-  // 모달 열릴 때 닉네임과 프로필 이미지 동기화
+-  const handleOpenChange = (open: boolean) => {
+-    if (open) {
+-      setNickname(user?.nickname ?? "");
+-      setSelectedProfileImage(user?.profileImage ?? "");
+-    }
++  const onSubmit = async (data: ProfileSettingFormData) => {
++    await updateProfile(
++      data.nickname,
++      PROFILE_IMAGES.indexOf(data.profileImage) + 1,
++    );
++    setOpen(false);
+   };
+ 
++  const selectedProfileImage = watch("profileImage");
++  const canSubmit = isValid && !isSubmitting;
++
+   return (
+-    <Dialog onOpenChange={handleOpenChange}>
++    <Dialog open={open} onOpenChange={handleOpenChange}>
+       <DialogPortal />
+       <DialogTrigger asChild>
+-        <div className="flex items-center gap-2">
++        <div className="flex items-center gap-2 cursor-pointer">
+           <img
+             src={user?.profileImage}
+             alt="profile"
+@@ -59,7 +70,10 @@ export default function ProfileSettingModal() {
+         </div>
+       </DialogTrigger>
+       <DialogContent className="w-180">
+-        <div className="px-20 py-22.5 flex flex-col gap-20">
++        <form
++          onSubmit={handleSubmit(onSubmit)}
++          className="px-20 py-22.5 flex flex-col gap-20"
++        >
+           <div className="text-4xl font-bold text-scale-600">프로필 설정</div>
+           <div className="flex flex-col gap-12.5">
+             <div className="mx-auto relative w-28 h-28">
+@@ -67,41 +81,42 @@ export default function ProfileSettingModal() {
+                 src={selectedProfileImage}
+                 className="w-28 h-28 rounded-full object-cover"
+               />
+-
+-              <ProfileImageModal
+-                imageCandidates={PROFILE_IMAGES}
+-                selectedProfileImage={selectedProfileImage ?? ""}
+-                onSave={(selected) => setSelectedProfileImage(selected)}
++              <Controller
++                name="profileImage"
++                control={control}
++                render={({ field: { value, onChange } }) => (
++                  <ProfileImageModal
++                    imageCandidates={PROFILE_IMAGES}
++                    selectedProfileImage={value}
++                    onSave={onChange}
++                  />
++                )}
+               />
+             </div>
++
+             <div className="flex flex-col gap-3">
+               <input
+-                value={nickname}
+-                onChange={(e) => {
+-                  setNickname(e.target.value);
+-                }}
++                {...register("nickname")}
+                 placeholder="닉네임(최대 10자)"
+                 className="w-full h-14 rounded-xl border border-black/10 px-5 outline-none focus:border-brand-primary"
+               />
+-              {showWarning && (
++              {errors.nickname && (
+                 <p className="text-sm text-red-500">
+-                  *10자 이내의 한글, 숫자, 영문자를 입력해주세요.
++                  {errors.nickname.message}
+                 </p>
+               )}
+             </div>
+ 
+-            <DialogClose asChild>
+-              <Button
+-                variant={canSubmit ? "primary" : "disabled"}
+-                disabled={!canSubmit}
+-                onClick={handleSubmit}
+-                className="h-14"
+-              >
+-                {"멋시장 시작하기"}
+-              </Button>
+-            </DialogClose>
++            <Button
++              type="submit"
++              variant={canSubmit ? "primary" : "disabled"}
++              disabled={!canSubmit}
++              className="h-14"
++            >
++              {isSubmitting ? "저장 중..." : "멋시장 시작하기"}
++            </Button>
+           </div>
+-        </div>
++        </form>
+       </DialogContent>
+     </Dialog>
+   );
+diff --git a/src/components/Modal/schema/profileSettingSchema.ts b/src/components/Modal/schema/profileSettingSchema.ts
+new file mode 100644
+index 0000000..7228c7f
+--- /dev/null
++++ b/src/components/Modal/schema/profileSettingSchema.ts
+@@ -0,0 +1,16 @@
++import { z } from "zod";
++
++const NICKNAME_PATTERN =
++  /^[0-9A-Za-z가-힣ᄀ-ᇿ㄰-㆏]+$/u;
++const NICKNAME_MESSAGE = "*10자 이내의 한글, 숫자, 영문자를 입력해주세요.";
++
++export const profileSettingSchema = z.object({
++  nickname: z
++    .string()
++    .min(1, "닉네임을 입력해주세요.")
++    .max(10, NICKNAME_MESSAGE)
++    .regex(NICKNAME_PATTERN, NICKNAME_MESSAGE),
++  profileImage: z.string().min(1, "프로필 이미지를 선택해주세요."),
++});
++
++export type ProfileSettingFormData = z.infer<typeof profileSettingSchema>;
+diff --git a/src/hooks/useAuctionQuery.ts b/src/hooks/useAuctionQuery.ts
+new file mode 100644
+index 0000000..b40e246
+--- /dev/null
++++ b/src/hooks/useAuctionQuery.ts
+@@ -0,0 +1,51 @@
++import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
++import {
++  AuctionListParams,
++  createAuction,
++  CreateAuctionRequest,
++  getAllAuctions,
++} from "@/apis/api";
++
++/**
++ * 경매 관련 쿼리 키
++ * - all: 경매 관련 모든 쿼리의 상위 키 (무효화 시 사용)
++ * - list: 조건별 경매 목록
++ */
++export const auctionQueryKeys = {
++  all: ["auctions"] as const,
++  list: (params: AuctionListParams = {}) =>
++    [...auctionQueryKeys.all, "list", params] as const,
++};
++
++/**
++ * 경매 목록을 서버로부터 가져오고 관리하는 쿼리 훅
++ */
++export function useAuctionList(params: AuctionListParams = {}) {
++  return useQuery({
++    queryKey: auctionQueryKeys.list(params),
++    queryFn: () => getAllAuctions(params),
++  });
++}
++
++/**
++ * 경매를 등록하는 뮤테이션 훅
++ * 성공 시 경매 목록 캐시를 무효화하여 새로 등록한 경매가 목록에 반영되도록 합니다.
++ */
++export const useCreateAuction = () => {
++  const queryClient = useQueryClient();
++
++  return useMutation({
++    mutationFn: async (data: CreateAuctionRequest) => {
++      const response = await createAuction(data);
++      // createAuction은 실패 시 null을 반환하므로, 에러로 바꿔 onError/isError가 동작하게 함
++      if (!response) throw new Error("경매 등록에 실패했습니다.");
++      return response;
++    },
++    onSuccess: () => {
++      queryClient.invalidateQueries({ queryKey: auctionQueryKeys.all });
++    },
++    onError: (error) => {
++      console.error("createAuction error:", error);
++    },
++  });
++};
+diff --git a/src/pages/Auction/AuctionSearchPage.tsx b/src/pages/Auction/AuctionSearchPage.tsx
+index dd46bc6..94b1a47 100644
+--- a/src/pages/Auction/AuctionSearchPage.tsx
++++ b/src/pages/Auction/AuctionSearchPage.tsx
+@@ -1,8 +1,9 @@
+-import { AuctionListItem, getAllAuctions } from "@/apis/api";
++import { AuctionListItem } from "@/apis/api";
+ import { useEffect, useMemo, useState } from "react";
+ import { AuctionCard } from "./components/AuctionCard";
+ import Pagination from "@/components/Pagination";
+ import { toAbsoluteUrl } from "@/utils/url";
++import { useAuctionList } from "@/hooks/useAuctionQuery";
+ 
+ const PAGE_SIZE = 6;
+ 
+@@ -12,27 +13,13 @@ function pickImage(a: AuctionListItem) {
+ }
+ 
+ function AuctionSearchPage() {
+-  const [auctions, setAuctions] = useState<AuctionListItem[]>([]);
+-  const [loading, setLoading] = useState(true);
+-  const [error, setError] = useState<string | null>(null);
++  // 서버 상태는 TanStack Query로 관리 (경매 등록 시 캐시 무효화 → 자동 refetch)
++  const { data: auctions = [], isLoading: loading, isError } = useAuctionList({
++    status: "active",
++  });
++  const error = isError ? "경매 목록 불러오기 실패" : null;
+   const [page, setPage] = useState(1);
+ 
+-  useEffect(() => {
+-    async function load() {
+-      try {
+-        setLoading(true);
+-        const data = await getAllAuctions({ status: "active" });
+-        setAuctions(data);
+-      } catch (e) {
+-        console.error(e);
+-        setError("경매 목록 불러오기 실패");
+-      } finally {
+-        setLoading(false);
+-      }
+-    }
+-    load();
+-  }, []);
+-
+   const total = auctions.length;
+   const pageItems = useMemo(() => {
+     const start = (page - 1) * PAGE_SIZE;
+diff --git a/src/pages/AuctionCreate/AuctionCreatePage.tsx b/src/pages/AuctionCreate/AuctionCreatePage.tsx
+index 64897d0..51438d1 100644
+--- a/src/pages/AuctionCreate/AuctionCreatePage.tsx
++++ b/src/pages/AuctionCreate/AuctionCreatePage.tsx
+@@ -1,6 +1,6 @@
+-import { Cup, File } from "@/assets/image";
++import { useNavigate } from "react-router-dom";
+ import { Button } from "@/components/Button";
+-import { auctionCreateSchema } from "./schema";
++import { auctionCreateSchema, AuctionCreateFormData } from "./schema";
+ import { FormProvider, useForm } from "react-hook-form";
+ import { zodResolver } from "@hookform/resolvers/zod";
+ import { TitleField } from "./components/TitleField";
+@@ -8,19 +8,31 @@ import { DescriptionField } from "./components/DescriptionField";
+ import { ImageField } from "./components/ImageField";
+ import { StartPriceField } from "./components/StartPriceField";
+ import { DurationField } from "./components/DurationField";
++import { useCreateAuction } from "@/hooks/useAuctionQuery";
++import { CreateAuctionRequest } from "@/apis/api";
++import { ROUTES } from "@/constants/router";
+ 
+-type Props = {
+-  onSubmit?: (payload: {
+-    title: string;
+-    description: string;
+-    image: File;
+-    startPriceCup: number;
+-    duration: { d: number; h: number; m: number };
+-  }) => void | Promise<void>;
+-};
++// 폼 데이터 → 서버 요청 형식 변환
++function toCreateAuctionRequest(
++  data: AuctionCreateFormData,
++): CreateAuctionRequest {
++  const { days, hours, minutes } = data.duration;
++  const durationMs = ((days * 24 + hours) * 60 + minutes) * 60 * 1000;
+ 
+-function AuctionCreatePage({ onSubmit }: Props) {
+-  const methods = useForm({
++  return {
++    title: data.title.trim(),
++    description: data.description.trim(),
++    starting_price: data.startPrice,
++    image_file: data.image,
++    end_time: new Date(Date.now() + durationMs).toISOString(),
++  };
++}
++
++function AuctionCreatePage() {
++  const navigate = useNavigate();
++  const { mutateAsync: createAuctionMutation, isPending } = useCreateAuction();
++
++  const methods = useForm<AuctionCreateFormData>({
+     resolver: zodResolver(auctionCreateSchema),
+     mode: "onChange",
+     defaultValues: {
+@@ -35,6 +47,19 @@ function AuctionCreatePage({ onSubmit }: Props) {
+     },
+   });
+ 
++  const onSubmit = async (data: AuctionCreateFormData) => {
++    if (isPending) return;
++    try {
++      await createAuctionMutation(toCreateAuctionRequest(data));
++      // 등록 완료 후 경매 입찰 페이지로 이동
++      navigate(ROUTES.AUCTION.ROOT);
++    } catch {
++      alert("경매 등록에 실패했습니다. 다시 시도해주세요.");
++    }
++  };
++
++  const canSubmit = methods.formState.isValid && !isPending;
++
+   return (
+     <div className="w-full px-50 py-30">
+       <div className="max-w-[973px] mx-auto flex flex-col gap-25">
+@@ -46,9 +71,7 @@ function AuctionCreatePage({ onSubmit }: Props) {
+         </div>
+         <FormProvider {...methods}>
+           <form
+-            onSubmit={methods.handleSubmit((data) =>
+-              console.log("폼 데이터 제출", data),
+-            )}
++            onSubmit={methods.handleSubmit(onSubmit)}
+             className="w-full rounded-2xl bg-bg-white flex flex-col gap-25 shadow-xl px-35 py-22.5"
+           >
+             <div className="grid grid-cols-1 gap-12">
+@@ -66,11 +89,11 @@ function AuctionCreatePage({ onSubmit }: Props) {
+             <div className="w-full flex justify-center">
+               <Button
+                 type="submit"
+-                variant={methods.formState.isValid ? "primary" : "disabled"}
+-                disabled={!methods.formState.isValid}
++                variant={canSubmit ? "primary" : "disabled"}
++                disabled={!canSubmit}
+                 className="w-80 h-14"
+               >
+-                상품 등록하기
++                {isPending ? "경매 등록 중..." : "상품 등록하기"}
+               </Button>
+             </div>
+           </form>
+-- 
+2.43.0
+

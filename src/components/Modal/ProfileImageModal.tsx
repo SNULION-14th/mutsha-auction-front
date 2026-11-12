@@ -1,13 +1,5 @@
 import { Button } from "../Button";
-import {
-  Profile1,
-  Profile2,
-  Profile3,
-  Profile4,
-  Profile5,
-  Profile6,
-  Edit,
-} from "../../assets/image";
+import { Edit } from "../../assets/image";
 import { useState } from "react";
 import {
   Dialog,
@@ -17,31 +9,32 @@ import {
   DialogClose,
 } from "../ui/dialog";
 
-const CANDIDATES = [
-  Profile1,
-  Profile2,
-  Profile3,
-  Profile4,
-  Profile5,
-  Profile6,
-] as const;
+import { PROFILE_IMAGES } from "@/contexts/UserContext";
 
 type Props = {
-  selectedProfileImage?: string;
+  imageCandidates: typeof PROFILE_IMAGES;
+  selectedProfileImage: string;
   onSave: (img: string) => void;
 };
 
 export default function ProfileImageModal({
-  selectedProfileImage = CANDIDATES[0],
+  imageCandidates,
+  selectedProfileImage,
   onSave,
 }: Props) {
   const [selected, setSelected] = useState<string>(selectedProfileImage);
 
   return (
-    <Dialog>
+    <Dialog
+      onOpenChange={(open) => {
+        // 열릴 때마다 현재 폼 값으로 선택 상태 동기화
+        if (open) setSelected(selectedProfileImage);
+      }}
+    >
       <DialogPortal />
       <DialogTrigger asChild>
         <button
+          type="button" // form 안에 있으므로 submit 방지
           className="absolute -bottom-1 -right-1 w-9 h-9 rounded-full bg-white shadow flex items-center justify-center"
           aria-label="edit profile image"
         >
@@ -54,10 +47,11 @@ export default function ProfileImageModal({
             프로필 이미지 고르기
           </div>
           <div className="grid grid-cols-3 px-10 gap-8">
-            {CANDIDATES.map((candidate) => {
+            {imageCandidates.map((candidate) => {
               const isSel = selected === candidate;
               return (
                 <button
+                  type="button"
                   key={candidate}
                   onClick={() => {
                     setSelected(candidate);
@@ -74,6 +68,7 @@ export default function ProfileImageModal({
           </div>
           <DialogClose asChild>
             <Button
+              type="button"
               variant="primary"
               onClick={() => {
                 onSave(selected);
