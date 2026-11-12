@@ -1,9 +1,11 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { kakaoSignIn, getUserInfo } from "@/apis/api";
+import { useUser } from "@/contexts/UserContext";
 
 export default function Auth() {
   const navigate = useNavigate();
+  const { login } = useUser();
 
   useEffect(() => {
     (async () => {
@@ -20,7 +22,7 @@ export default function Auth() {
           try {
             const userProfile = await getUserInfo();
             if (userProfile) {
-              localStorage.setItem("userProfile", JSON.stringify(userProfile));
+              login(userProfile);
             } else {
               console.error("사용자 프로필 정보를 가져올 수 없습니다.");
             }

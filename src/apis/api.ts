@@ -32,6 +32,21 @@ export async function kakaoSignIn(code: string): Promise<boolean> {
   return false;
 }
 
+export async function signOut(): Promise<boolean> {
+  try {
+    const res = await api.post("/user/signout/");
+    if (res.status === 200 || res.status === 204) return true;
+    return false;
+  } catch (e: unknown) {
+    if (isAxiosError(e)) {
+      console.error("signOut error:", e.response?.status, e.response?.data);
+    } else {
+      console.error("signOut unknown error:", e);
+    }
+    return false;
+  }
+}
+
 export type AuctionListParams = {
   status?: "active" | "ended" | "cancelled";
   search?: string;
