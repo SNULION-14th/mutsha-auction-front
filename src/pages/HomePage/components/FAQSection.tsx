@@ -60,9 +60,11 @@ export function FAQSection() {
   ];
 
   return (
-    <div className="w-full px-50 py-25">
-      <div className="max-w-[1160px] mx-auto flex flex-col gap-15">
-        <div className="text-5xl font-bold text-scale-600">FAQs</div>
+    <div className="w-full px-30 pc:px-50 py-25">
+      <div className="max-w-[1160px] mx-auto flex flex-col max-pc:items-center gap-15">
+        <div className="text-4xl pc:text-5xl font-bold text-scale-600">
+          FAQs
+        </div>
         <div className="w-full flex flex-col gap-7.5">
           {FQAs.map((fqa) => (
             <FAQAccordion
