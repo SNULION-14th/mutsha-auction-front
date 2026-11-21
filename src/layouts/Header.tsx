@@ -18,26 +18,26 @@ export default function Header() {
 
   return (
     <header className="w-full h-22 fixed flex justify-center bg-bg-white mx-auto z-50 shadow-lg">
-      <div className="w-full max-w-[1680px] flex justify-between px-8 pc:px-17.5 py-5">
+      <div className="w-full max-w-[1680px] flex justify-between px-3 sm:px-8 pc:px-17.5 py-5">
         <Link to="/" className="cursor-pointer flex gap-4.5 items-center">
-          <img src={Logo} className="w-9 h-9" />
+          <img src={Logo} className="w-7 h-7 sm:w-9 sm:h-9" />
           <div className="text-3xl text-brand-primary font-bold max-pc:hidden">
             {t("header.title")}
           </div>
         </Link>
-        <div className="flex gap-10 items-center">
+        <div className="flex gap-2 sm:gap-10 items-center whitespace-nowrap max-sm:[&_button]:text-sm max-sm:[&_button]:px-1.5 max-sm:[&_button_img]:w-5">
           <Link to="/auction" className="cursor-pointer">
-            <div className="text-lg pc:text-xl text-scale-500">
+            <div className="text-[13px] sm:text-lg pc:text-xl text-scale-500">
               {t("header.auction")}
             </div>
           </Link>
           <Link to="/create" className="cursor-pointer">
-            <div className="text-lg pc:text-xl text-scale-500">
+            <div className="text-[13px] sm:text-lg pc:text-xl text-scale-500">
               {t("header.auction.register")}
             </div>
           </Link>
           <Link to="/history" className="cursor-pointer">
-            <div className="text-lg pc:text-xl text-scale-500">
+            <div className="text-[13px] sm:text-lg pc:text-xl text-scale-500">
               {t("header.auction.history")}
             </div>
           </Link>

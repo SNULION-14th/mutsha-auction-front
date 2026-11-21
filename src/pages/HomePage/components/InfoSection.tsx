@@ -76,9 +76,10 @@ function InfoCard({ image, title, description, detail }: InfoCardProps) {
   const toggleCard = () => setIsFlipped((prev) => !prev);
 
   return (
-    <div className="w-full [perspective:1000px]">
-      <div
-        className={`
+    <div className="info-slot w-full">
+      <div className="info-reveal w-full [perspective:1000px]">
+        <div
+          className={`
           relative w-full
           rounded-xl
           transition-transform duration-700
@@ -86,22 +87,23 @@ function InfoCard({ image, title, description, detail }: InfoCardProps) {
           cursor-pointer
           ${isFlipped ? "[transform:rotateY(180deg)]" : ""}
         `}
-        onClick={toggleCard}
-      >
-        <InfoCardFront
-          image={image}
-          title={title}
-          description={description}
-          detail={detail}
-          isHovered={isHovered}
-          onHoverChange={setIsHovered}
-        />
-        <InfoCardBack
-          image={image}
-          title={title}
-          description={description}
-          detail={detail}
-        />
+          onClick={toggleCard}
+        >
+          <InfoCardFront
+            image={image}
+            title={title}
+            description={description}
+            detail={detail}
+            isHovered={isHovered}
+            onHoverChange={setIsHovered}
+          />
+          <InfoCardBack
+            image={image}
+            title={title}
+            description={description}
+            detail={detail}
+          />
+        </div>
       </div>
     </div>
   );
