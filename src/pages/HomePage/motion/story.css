@@ -1,0 +1,115 @@
+@supports (animation-timeline: view()) and (animation-range: contain 100%) {
+  @media (min-height: 700px) and (min-width: 350px) and (prefers-reduced-motion: no-preference) {
+    .auction-story {
+      height: calc(320svh - 88px);
+      view-timeline: --story block;
+      view-timeline-inset: 88px 0;
+    }
+    .story-frame {
+      position: sticky;
+      top: 88px;
+      height: calc(100svh - 88px);
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+    .story-deck {
+      display: grid;
+      animation:
+        deck-enter 1s linear backwards,
+        deck-leave 1s linear forwards;
+      animation-timeline: --story, --story;
+      animation-range:
+        entry 35% entry 92%,
+        exit 8% exit 65%;
+    }
+    .story-scene:nth-child(3) {
+      animation-name: third-scene;
+    }
+    .story-track {
+      visibility: visible;
+    }
+    .story-track i {
+      animation: fill-track 1s linear both;
+      animation-timeline: --story;
+      animation-range: contain 0% contain 100%;
+    }
+    .story-scene {
+      grid-area: 1 / 1;
+      align-self: center;
+      animation: first-scene 1s linear both;
+      animation-timeline: --story;
+      animation-range: contain 0% contain 100%;
+    }
+    .story-scene:nth-child(2) {
+      animation-name: second-scene;
+    }
+  }
+}
+@keyframes first-scene {
+  0%,
+  26% {
+    opacity: 1;
+    transform: none;
+    visibility: visible;
+  }
+  41%,
+  100% {
+    opacity: 0;
+    transform: translateX(-100vw);
+    visibility: hidden;
+  }
+}
+@keyframes second-scene {
+  0%,
+  26% {
+    opacity: 0;
+    transform: translateX(100vw);
+    visibility: hidden;
+  }
+  41%,
+  59% {
+    opacity: 1;
+    transform: none;
+    visibility: visible;
+  }
+  74%,
+  100% {
+    opacity: 0;
+    transform: translateX(-100vw);
+    visibility: hidden;
+  }
+}
+@keyframes third-scene {
+  0%,
+  59% {
+    opacity: 0;
+    transform: translateX(100vw);
+    visibility: hidden;
+  }
+  74%,
+  100% {
+    opacity: 1;
+    transform: none;
+    visibility: visible;
+  }
+}
+@keyframes deck-enter {
+  from {
+    opacity: 0;
+    transform: translateX(100vw);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes deck-leave {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-100vw);
+  }
+}

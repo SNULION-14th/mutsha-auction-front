@@ -1,0 +1,64 @@
+@keyframes hero-drift {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.32);
+  }
+}
+.hero-photo {
+  animation: hero-drift 2s linear both;
+}
+
+.market-hero {
+  view-timeline: --hero block;
+  view-timeline-inset: 88px 0;
+}
+.hero-photo {
+  animation-timeline: --hero;
+  animation-range: exit 0% exit 100%;
+}
+
+.hero-great,
+.hero-market,
+.hero-mark,
+.hero-copy p {
+  animation: headline-drift 1s linear both;
+  animation-timeline: --hero;
+  animation-range: exit;
+}
+.hero-great {
+  --shift: -260px;
+}
+.hero-market {
+  --shift: -176px;
+}
+@keyframes headline-drift {
+  to {
+    transform: translateY(var(--shift));
+  }
+}
+.hero-mark {
+  --shift: -360px;
+}
+.hero-copy p {
+  --shift: -96px;
+}
+
+.hero-track {
+  visibility: visible;
+}
+.hero-track i {
+  animation: fill-track 1s linear both;
+  animation-timeline: scroll(root block);
+  animation-range: 0px clamp(440px, 80svh, 850px);
+}
+
+@keyframes fill-track {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}

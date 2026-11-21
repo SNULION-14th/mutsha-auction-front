@@ -1,0 +1,23 @@
+@media (prefers-reduced-motion: no-preference) {
+  .info-slot[data-zone] .info-reveal {
+    transition:
+      opacity 420ms ease,
+      transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .info-slot[data-zone="above"] .info-reveal,
+  .info-slot[data-zone="below"] .info-reveal {
+    opacity: 0;
+    transform: translateY(var(--offset));
+  }
+  .info-slot[data-zone="above"] {
+    --offset: -36px;
+  }
+  .info-slot[data-zone="below"] {
+    --offset: 36px;
+  }
+  @media (min-width: 1200px) {
+    .info-slot:nth-child(even)[data-zone="inside"] .info-reveal {
+      transition-delay: 90ms;
+    }
+  }
+}
