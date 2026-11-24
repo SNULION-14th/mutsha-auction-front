@@ -24,6 +24,8 @@
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
+  background: #292018;
+  color: #fff7ed;
   transform: translateY(12px);
 }
 
@@ -230,6 +232,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .home-to-top {
+    transition: none;
+  }
+
   .info-reveal [class*="transition-transform"] {
     transition: none;
   }

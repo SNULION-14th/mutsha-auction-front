@@ -4,54 +4,56 @@ import { gsap, ScrollTrigger, useGSAP } from "./gsapSetup";
 export function useHomeworkMotion(home: RefObject<HTMLDivElement | null>) {
   useGSAP(
     () => {
-      const button = home.current?.querySelector<HTMLButtonElement>(
-        ".home-to-top",
-      );
-      if (!button) return;
+      const topButton =
+        home.current?.querySelector<HTMLButtonElement>(".home-to-top");
+      if (!topButton) return;
 
       const media = gsap.matchMedia();
-      media.add("all", () => {
-        const reduceMotion = window.matchMedia(
-          "(prefers-reduced-motion: reduce)",
-        ).matches;
+      media.add(
+        "all",
+        () => {
+          const reduceMotion = window.matchMedia(
+            "(prefers-reduced-motion: reduce)",
+          ).matches;
 
-        gsap.set(button, {
-          autoAlpha: 0,
-          y: reduceMotion ? 0 : 12,
-          pointerEvents: "none",
-        });
-
-        const show = () => {
-          gsap.to(button, {
-            autoAlpha: 1,
-            y: 0,
-            duration: reduceMotion ? 0 : 0.22,
-            overwrite: true,
-            onStart: () => {
-              button.style.pointerEvents = "auto";
-            },
-          });
-        };
-
-        const hide = () => {
-          gsap.to(button, {
+          gsap.set(topButton, {
             autoAlpha: 0,
             y: reduceMotion ? 0 : 12,
-            duration: reduceMotion ? 0 : 0.18,
-            overwrite: true,
-            onComplete: () => {
-              button.style.pointerEvents = "none";
-            },
+            pointerEvents: "none",
           });
-        };
+          const showTop = () => {
+            gsap.to(topButton, {
+              autoAlpha: 1,
+              y: 0,
+              duration: reduceMotion ? 0 : 0.22,
+              overwrite: true,
+              onStart: () => {
+                topButton.style.pointerEvents = "auto";
+              },
+            });
+          };
 
-        ScrollTrigger.create({
-          trigger: ".market-hero",
-          start: "bottom top",
-          onEnter: show,
-          onLeaveBack: hide,
-        });
-      }, home);
+          const hideTop = () => {
+            gsap.to(topButton, {
+              autoAlpha: 0,
+              y: reduceMotion ? 0 : 12,
+              duration: reduceMotion ? 0 : 0.18,
+              overwrite: true,
+              onComplete: () => {
+                topButton.style.pointerEvents = "none";
+              },
+            });
+          };
+
+          ScrollTrigger.create({
+            trigger: ".market-hero",
+            start: "bottom top",
+            onEnter: showTop,
+            onLeaveBack: hideTop,
+          });
+        },
+        home,
+      );
 
       return () => media.revert();
     },

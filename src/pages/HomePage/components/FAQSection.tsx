@@ -1,5 +1,6 @@
-import { useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { ScrollTrigger } from "../motion/gsapSetup";
 
 function FAQAccordion({
   question,
@@ -9,9 +10,32 @@ function FAQAccordion({
   answer: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const itemRef = useRef<HTMLDivElement>(null);
+  const revealAnswer = useCallback(() => setIsOpen(true), []);
+
+  useEffect(() => {
+    const item = itemRef.current;
+    if (!item) return;
+
+    const trigger = ScrollTrigger.create({
+      trigger: item,
+      start: "top 76%",
+      onEnter: revealAnswer,
+      onEnterBack: revealAnswer,
+    });
+
+    return () => trigger.kill();
+  }, [revealAnswer]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const frame = requestAnimationFrame(() => ScrollTrigger.refresh());
+    return () => cancelAnimationFrame(frame);
+  }, [isOpen]);
 
   return (
     <div
+      ref={itemRef}
       className={`flex flex-col justify-center rounded-xl px-12.5 py-10 shadow-lg w-full bg-bg-white ${isOpen ? "border-2 border-brand-primary ring-4 ring-brand-primary/15" : ""}`}
     >
       <div className="flex justify-between items-center">
@@ -36,7 +60,7 @@ function FAQAccordion({
         </button>
       </div>
       <div
-        className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
+        className={`grid transition-[grid-template-rows] duration-300 ease-in-out motion-reduce:transition-none ${isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
       >
         <div className="overflow-hidden">
           <div className="text-lg text-left mt-4">{answer}</div>
