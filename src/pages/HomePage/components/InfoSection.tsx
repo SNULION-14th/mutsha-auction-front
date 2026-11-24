@@ -19,11 +19,11 @@ function InfoCardFront({
   onHoverChange,
 }: InfoCardProps & {
   isHovered: boolean;
-  onHoverChange: (v: boolean) => void;
+  onHoverChange: (value: boolean) => void;
 }) {
   return (
     <div
-      className="w-full flex max-pc:flex-col items-center rounded-xl p-5 gap-5 shadow-lg [backface-visibility:hidden]"
+      className="w-full h-52 pc:h-36 flex max-pc:flex-col items-center rounded-xl p-5 gap-5 shadow-lg [backface-visibility:hidden]"
       onMouseEnter={() => onHoverChange(true)}
       onMouseLeave={() => onHoverChange(false)}
       style={{
@@ -42,7 +42,7 @@ function InfoCardFront({
       <div className="w-25 h-25 shrink-0">
         <img src={image} className="w-full h-full object-contain" />
       </div>
-      <div className="flex flex-col gap-2 flex-1 min-w-0 max-pc:w-full">
+      <div className="flex flex-col gap-2 flex-1 min-w-0">
         <div className="text-xl text-scale-600 font-bold">{title}</div>
         <div className="text-base text-scale-400 flex-1 truncate">
           {description}
@@ -52,10 +52,10 @@ function InfoCardFront({
   );
 }
 
-function InfoCardBack({ detail }: InfoCardProps) {
+function InfoCardBack({ detail }: Pick<InfoCardProps, "detail">) {
   return (
     <div
-      className="absolute inset-0 w-full flex items-center justify-center rounded-xl p-12 gap-5 shadow-lg [backface-visibility:hidden] [transform:rotateY(180deg)]"
+      className="absolute inset-0 w-full h-52 pc:h-36 flex items-center justify-center rounded-xl p-12 gap-5 shadow-lg [backface-visibility:hidden] [transform:rotateY(180deg)]"
       style={{
         background: "linear-gradient(145deg, #EDDACE, #DF6621)",
         color: "#2b1a10",
@@ -76,32 +76,24 @@ function InfoCard({ image, title, description, detail }: InfoCardProps) {
   const toggleCard = () => setIsFlipped((prev) => !prev);
 
   return (
-    <div className="w-full [perspective:1000px]">
-      <div
-        className={`
-          relative w-full
-          rounded-xl
-          transition-transform duration-700
-          [transform-style:preserve-3d]
-          cursor-pointer
-          ${isFlipped ? "[transform:rotateY(180deg)]" : ""}
-        `}
-        onClick={toggleCard}
-      >
-        <InfoCardFront
-          image={image}
-          title={title}
-          description={description}
-          detail={detail}
-          isHovered={isHovered}
-          onHoverChange={setIsHovered}
-        />
-        <InfoCardBack
-          image={image}
-          title={title}
-          description={description}
-          detail={detail}
-        />
+    <div className="info-slot w-full">
+      <div className="info-reveal w-full [perspective:1000px]">
+        <div
+          className={`relative w-full rounded-xl transition-transform duration-700 [transform-style:preserve-3d] cursor-pointer ${
+            isFlipped ? "[transform:rotateY(180deg)]" : ""
+          }`}
+          onClick={toggleCard}
+        >
+          <InfoCardFront
+            image={image}
+            title={title}
+            description={description}
+            detail={detail}
+            isHovered={isHovered}
+            onHoverChange={setIsHovered}
+          />
+          <InfoCardBack detail={detail} />
+        </div>
       </div>
     </div>
   );
@@ -110,7 +102,6 @@ function InfoCard({ image, title, description, detail }: InfoCardProps) {
 export function InfoSection() {
   const navigate = useNavigate();
   const { t } = useTranslation();
-
   const InfoCards: InfoCardProps[] = [
     {
       image: Phone,
